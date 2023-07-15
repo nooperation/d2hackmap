@@ -1,0 +1,13 @@
+Debug
+Release
+Bin
+Obj
+Output
+*.user
+*.sdf
+*.suo
+*.ipch
+*.opensdf
+.vs
+Publish_Release
+Publish_Debug
