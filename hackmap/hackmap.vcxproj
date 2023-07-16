@@ -129,7 +129,6 @@ xcopy /Y /F "$(TargetDir)$(TargetName).pdb" "D:\diablo ii\plugin\"
     <ClCompile Include="ModuleWalker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="D2HACKMAP.CFG" />
     <None Include="hackmap.def" />
   </ItemGroup>
   <ItemGroup>

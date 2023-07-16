@@ -45,9 +45,6 @@
     <None Include="hackmap.def">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="D2HACKMAP.CFG">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="hnmtoggles.cxx">
       <Filter>Not Compile Files</Filter>
     </None>
