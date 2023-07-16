@@ -13,7 +13,7 @@ Patch_t a1024X768ResolutionPatchs[] = {
 	{PatchVALUE,  DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x23ED),   0x0400, 2, -1},	// 6FAA23EC
 	{PatchVALUE,  DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x23F7),   0x0300, 2, -1}, 
 	
-	// ÐÞ¸ÄD2Direct3D£¬Ê¹ÔÚÈ«ÆÁÄ£Ê½ÏÂÏÔÊ¾ÕýÈ·µÄ1024X768
+	// ä¿®æ”¹D2Direct3Dï¼Œä½¿åœ¨å…¨å±æ¨¡å¼ä¸‹æ˜¾ç¤ºæ­£ç¡®çš„1024X768
 	{PatchVALUE,  DLLOFFSET(D2Direct3D, DLLBASE_D2Direct3D+0x205D),   0x0400, 2, -1}, 
 	{PatchVALUE,  DLLOFFSET(D2Direct3D, DLLBASE_D2Direct3D+0x2067),   0x0300, 2, -1}, 
 	{PatchVALUE,  DLLOFFSET(D2Direct3D, DLLBASE_D2Direct3D+0x2CDD),   0x0400, 2, -1}, 
@@ -33,21 +33,21 @@ Patch_t a1024X768ResolutionPatchs[] = {
 
 hackmap.cpp:
 /*
-¸ß·Ö±æÂÊÖ§³Ö640X480->1024X768
+é«˜åˆ†è¾¨çŽ‡æ”¯æŒ640X480->1024X768
 */
 
 
 DWORD HR1024X768_FixMPQ()
 {
-	// ÐÞÕý1024X768ÏÂÑü´øÖÐÎïÆ·µÄÎ»ÖÃ£¬²Î¿¼belts.txt£¬ÐÞÕýµÚÒ»²¿·Ö£¨ÓÃÓÚ640X480·Ö±æÂÊ£©
+	// ä¿®æ­£1024X768ä¸‹è…°å¸¦ä¸­ç‰©å“çš„ä½ç½®ï¼Œå‚è€ƒbelts.txtï¼Œä¿®æ­£ç¬¬ä¸€éƒ¨åˆ†ï¼ˆç”¨äºŽ640X480åˆ†è¾¨çŽ‡ï¼‰
 	DWORD *BeltTbl = D2COMMON_pBeltLocationTbl;
 	DWORD *p;
 	int i,j;
 	
 	p = BeltTbl;
-	for (i=0;i<7;i++)	// Ò»¹²ÐèÒªÐÞÕý7Ìõ¼ÇÂ¼
+	for (i=0;i<7;i++)	// ä¸€å…±éœ€è¦ä¿®æ­£7æ¡è®°å½•
 	{
-		p++;p++;	// Ìø¹ý×îÇ°ÃæµÄÁ½¸öDWORD
+		p++;p++;	// è·³è¿‡æœ€å‰é¢çš„ä¸¤ä¸ªDWORD
 		for (j=0;j<16;j++)
 		{
 			if (*p != 0) (*p) = (*p) + 194;
@@ -61,11 +61,11 @@ DWORD HR1024X768_FixMPQ()
 		}
 	}
 	
-	// ÐÞÕý1024X768ÏÂÉíÉÏÎïÆ·µÄÎ»ÖÃ£¬²Î¿¼invertory.txt£¬ÐÞÕýµÚÒ»²¿·Ö£¨ÓÃÓÚ640X480·Ö±æÂÊ£©
+	// ä¿®æ­£1024X768ä¸‹èº«ä¸Šç‰©å“çš„ä½ç½®ï¼Œå‚è€ƒinvertory.txtï¼Œä¿®æ­£ç¬¬ä¸€éƒ¨åˆ†ï¼ˆç”¨äºŽ640X480åˆ†è¾¨çŽ‡ï¼‰
 	DWORD *InvTbl = D2COMMON_pInvLocationTbl;
 	
 	p = InvTbl;
-	for (i=0;i<16;i++)	// Ò»¹²ÐèÒªÐÞÕý16Ìõ¼ÇÂ¼
+	for (i=0;i<16;i++)	// ä¸€å…±éœ€è¦ä¿®æ­£16æ¡è®°å½•
 	{
 		for (j=0;j<12;j++)
 		{

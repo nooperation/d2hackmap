@@ -14,11 +14,11 @@
 //?2001-2 mousepad - mousepad@forward.to
 
 /*
-BaalÊÍ·Å5Ð¡¶Ó£º 4D 01 B2 00 00 00 1E 01 00 00 01 F2 3A A0 13 00 00
-Baal×ªÉíÏÂÈ¥£º5D 24 00 03 00 00 
-KD´ò¿ª×îºóµÄ·âÓ¡£º 89 0C
+Baalé‡Šæ”¾5å°é˜Ÿï¼š 4D 01 B2 00 00 00 1E 01 00 00 01 F2 3A A0 13 00 00
+Baalè½¬èº«ä¸‹åŽ»ï¼š5D 24 00 03 00 00 
+KDæ‰“å¼€æœ€åŽçš„å°å°ï¼š 89 0C
 
-ULC»ð·ç±©ÆÁ±Î£º¼ì²â0x99±¨ÎÄ£¬Ò»µ©·¢ÏÖÊ¹ÓÃ197¼¼ÄÜ£¨»ð·ç±©£©Ôò×ªÎªÆÕÍ¨¹¥»÷µÄ¶¯»­£¬¹þ¹þ
+ULCç«é£Žæš´å±è”½ï¼šæ£€æµ‹0x99æŠ¥æ–‡ï¼Œä¸€æ—¦å‘çŽ°ä½¿ç”¨197æŠ€èƒ½ï¼ˆç«é£Žæš´ï¼‰åˆ™è½¬ä¸ºæ™®é€šæ”»å‡»çš„åŠ¨ç”»ï¼Œå“ˆå“ˆ
 */
 
 #define WIN32_LEAN_AND_MEAN
@@ -96,12 +96,12 @@ struct D2ScreenHookStruct
 } D2ScreenHook[10];
 
 /*
-D2ScreenHook[0] : ÏÔÊ¾+Exp£¬»ñµÃµÄEXP
-D2ScreenHook[1] : ÏÔÊ¾LvlÒÔ¼°×ÜµÄEXP
-D2ScreenHook[2] : ÏÔÊ¾Ping
-D2ScreenHook[3] : ÏÔÊ¾FPS
-D2ScreenHook[4] : ÏÔÊ¾BugMessage
-D2ScreenHook[5] : ÏÔÊ¾PET EXP°Ù·Ö±È
+D2ScreenHook[0] : æ˜¾ç¤º+Expï¼ŒèŽ·å¾—çš„EXP
+D2ScreenHook[1] : æ˜¾ç¤ºLvlä»¥åŠæ€»çš„EXP
+D2ScreenHook[2] : æ˜¾ç¤ºPing
+D2ScreenHook[3] : æ˜¾ç¤ºFPS
+D2ScreenHook[4] : æ˜¾ç¤ºBugMessage
+D2ScreenHook[5] : æ˜¾ç¤ºPET EXPç™¾åˆ†æ¯”
 */
 
 inline BYTE GetGameMode()
@@ -161,7 +161,7 @@ org_code:
 
 void CheckBugQuest()
 {
-  // ¼ì²éÊÇ·ñÖ¸¶¨µÄÈÎÎñÔÚµ±Ç°ÓÎÏ·ÊÇBUGÈÎÎñ£¬Èç¹ûÊÇ£¬ÔòÉèÖÃQuest±êÖ¾£¬·ñÔòÇå³ýQuest±êÖ¾
+  // æ£€æŸ¥æ˜¯å¦æŒ‡å®šçš„ä»»åŠ¡åœ¨å½“å‰æ¸¸æˆæ˜¯BUGä»»åŠ¡ï¼Œå¦‚æžœæ˜¯ï¼Œåˆ™è®¾ç½®Questæ ‡å¿—ï¼Œå¦åˆ™æ¸…é™¤Questæ ‡å¿—
   // BugKB: quest=40
   // BugKD: quest=26
   // BugKM: quest=22
@@ -179,7 +179,7 @@ void CheckBugQuest()
     d1 = D2COMMON_GetQuestFlag(D2CLIENT_GetQuestInfo(), 26, 0);
     d3 = D2COMMON_GetQuestFlag(D2CLIENT_GetGameQuestInfo(), 26, 15);
     
-    if ((d1 == 0) && (d3 == 0)) // Íæ¼Ò»¹Ã»Íê³ÉÖ¸¶¨ÈÎÎñ£¬ÇÒµ±Ç°ÓÎÏ·¿ÉÒÔÍê³É
+    if ((d1 == 0) && (d3 == 0)) // çŽ©å®¶è¿˜æ²¡å®ŒæˆæŒ‡å®šä»»åŠ¡ï¼Œä¸”å½“å‰æ¸¸æˆå¯ä»¥å®Œæˆ
       BugKD = 1;
   }
   
@@ -188,7 +188,7 @@ void CheckBugQuest()
     d1 = D2COMMON_GetQuestFlag(D2CLIENT_GetQuestInfo(), 40, 0);
     d3 = D2COMMON_GetQuestFlag(D2CLIENT_GetGameQuestInfo(), 40, 15);
 
-    if ((d1 == 0) && (d3 == 0)) // Íæ¼Ò»¹Ã»Íê³ÉÖ¸¶¨ÈÎÎñ£¬ÇÒµ±Ç°ÓÎÏ·¿ÉÒÔÍê³É
+    if ((d1 == 0) && (d3 == 0)) // çŽ©å®¶è¿˜æ²¡å®ŒæˆæŒ‡å®šä»»åŠ¡ï¼Œä¸”å½“å‰æ¸¸æˆå¯ä»¥å®Œæˆ
       BugKB = 1;
   }
 
@@ -197,7 +197,7 @@ void CheckBugQuest()
     d1 = D2COMMON_GetQuestFlag(D2CLIENT_GetQuestInfo(), 22, 0);
     d3 = D2COMMON_GetQuestFlag(D2CLIENT_GetGameQuestInfo(), 22, 15);
 
-    if ((d1 == 0) && (d3 == 0)) // Íæ¼Ò»¹Ã»Íê³ÉÖ¸¶¨ÈÎÎñ£¬ÇÒµ±Ç°ÓÎÏ·¿ÉÒÔÍê³É
+    if ((d1 == 0) && (d3 == 0)) // çŽ©å®¶è¿˜æ²¡å®ŒæˆæŒ‡å®šä»»åŠ¡ï¼Œä¸”å½“å‰æ¸¸æˆå¯ä»¥å®Œæˆ
       BugKM = 1;
   }
 }
@@ -245,7 +245,7 @@ void InitScreenHook()
     D2ScreenHook[i].size = 1;
   }
   
-  // ÏÔÊ¾BugKD¡¢BugKM¡¢BugKBµÄÏûÏ¢
+  // æ˜¾ç¤ºBugKDã€BugKMã€BugKBçš„æ¶ˆæ¯
   D2ScreenHook[4].x = 30;
   D2ScreenHook[4].y = 150;
   D2ScreenHook[4].color = 8;
@@ -507,7 +507,7 @@ void __declspec(naked) RecvCommand_5A_Patch_ASM()
 void __stdcall BugKBProtect(BYTE *aPacket)
 {
   /*
-  Baal×ªÉíÏÂÈ¥£º5D 24 00 03 00 00 
+  Baalè½¬èº«ä¸‹åŽ»ï¼š5D 24 00 03 00 00 
   */
   if (aPacket[1] == 0x24 && aPacket[2] == 0x00 && aPacket[3] == 0x03 && tToggleBugKB.flag>=1 && BugKB==1)
   {
@@ -540,7 +540,7 @@ void __declspec(naked) RecvCommand_5D_Patch_ASM()
 void __stdcall BugKDProtect(BYTE *aPacket)
 {
   /*
-  KD´ò¿ª×îºóµÄ·âÓ¡£º 89 0C
+  KDæ‰“å¼€æœ€åŽçš„å°å°ï¼š 89 0C
   */
   if (aPacket[1] == 0x0C && tToggleBugKD.flag >= 1 && BugKD==1)
   {
@@ -3387,7 +3387,7 @@ void __fastcall CowLevelQuestPatch(int ypos, int xpos)
 {
   int QuesttPage = D2CLIENT_nQuestPage;
   if (QuesttPage==0) {
-  	// ¼ì²éACT1É±Å£ÍõÈÎÎñÊÇ·ñÊÇBUG£¿
+  	// æ£€æŸ¥ACT1æ€ç‰›çŽ‹ä»»åŠ¡æ˜¯å¦æ˜¯BUGï¼Ÿ
     int cow = D2COMMON_GetQuestFlag(D2CLIENT_GetQuestInfo(), 4, 10);
     if (cow)
     {
@@ -3400,7 +3400,7 @@ void __fastcall CowLevelQuestPatch(int ypos, int xpos)
   else
   if (QuesttPage==1) {
   	
-  	// ¼ì²éACT2É±´ó³æÈÎÎñÊÇ·ñÊÇBUG£¿
+  	// æ£€æŸ¥ACT2æ€å¤§è™«ä»»åŠ¡æ˜¯å¦æ˜¯BUGï¼Ÿ
     int dru = D2COMMON_GetQuestFlag(D2CLIENT_GetQuestInfo(), 14, 5);
     if (dru)
     {
@@ -3866,7 +3866,7 @@ void SaveGameName()
     strcpy(szGameName, gi->szGameName);
     wcscpy2(wszGamePassword, gi->szGamePassword);
 
-		// Ö§³Öºº×ÖÓÎÏ·Ãû
+		// æ”¯æŒæ±‰å­—æ¸¸æˆå
 		MultiByteToWideChar(
 					CP_ACP,         // code page
 					0,         // character-type options
@@ -3935,8 +3935,8 @@ void GameLoopPatch()
     ForceBugKDQuit=0;
     ForceBugKDQuitTimer = CurrentSecond; memset(ForceBugKDQuitTimerSet,0,10*sizeof(BYTE));
 
-    // ¶ÔÓÚ1.11MODµÄ°æ±¾£¬act5×îºóµÄLEVEL=136£¬¶ø¶ÔÓÚ1.10µÄ°æ±¾£¬act5×îºóµÄLEVEL=132
-    // ¸ù¾ÝÊµ¼ÊµÄÇé¿ö½øÐÐÐÞÕý
+    // å¯¹äºŽ1.11MODçš„ç‰ˆæœ¬ï¼Œact5æœ€åŽçš„LEVEL=136ï¼Œè€Œå¯¹äºŽ1.10çš„ç‰ˆæœ¬ï¼Œact5æœ€åŽçš„LEVEL=132
+    // æ ¹æ®å®žé™…çš„æƒ…å†µè¿›è¡Œä¿®æ­£
     if (D2COMMON_GetLevelRecord(136)==0) actlvls[5] = 133;
     	
   }
@@ -4029,7 +4029,7 @@ void GameLoopPatch()
   }
   
   DWORD mysecs1,mysecs2;
-  // Èç¹ûÇÐ»»ÁË³¡¾°£¬ÔòÖØÐÂÉèÖÃBugMsg¼ÆÊýÆ÷
+  // å¦‚æžœåˆ‡æ¢äº†åœºæ™¯ï¼Œåˆ™é‡æ–°è®¾ç½®BugMsgè®¡æ•°å™¨
   if (LastACT != nCurrentAct)
   {
     BugMsgTimer = CurrentSecond;
@@ -4266,7 +4266,7 @@ void __fastcall KeydownPatch(BYTE keycode, BYTE repeat)
 {
 	if (keycode==VK_RETURN)
 	{
-		 //½øÈëÁÄÌì£¬¿ªÆôÊäÈë·¨
+		 //è¿›å…¥èŠå¤©ï¼Œå¼€å¯è¾“å…¥æ³•
 		 ImmAssociateContext(D2GFX_GetHwnd(), hIMC);
 	}
 
@@ -4302,7 +4302,7 @@ void __fastcall KeydownPatch(BYTE keycode, BYTE repeat)
   {
 	  UnitAny *pla = D2CLIENT_GetPlayerUnit();
 	  UnitAny *item = D2COMMON_GetCursorItem(pla->pInventory);
-	  D2CLIENT_PrintGameStringAtTopLeft(L"ÎÔ²Û£¬ÎÒÒªÈÓ¶«Î÷ÁË", 8);
+	  D2CLIENT_PrintGameStringAtTopLeft(L"å§æ§½ï¼Œæˆ‘è¦æ‰”ä¸œè¥¿äº†", 8);
   }
   for (int i = 0; i < ARRAYSIZE(viewingList); i++) {
     if (keycode == viewingList[i]->vkKeyCode)
@@ -5802,22 +5802,22 @@ void InstallPatchs2()
 }
 
 /*
-¸ß·Ö±æÂÊÖ§³Ö640X480->1024X768
+é«˜åˆ†è¾¨çŽ‡æ”¯æŒ640X480->1024X768
 */
 
 
 DWORD HR1024X768_FixMPQ()
 {
 	D2CLIENT_PrintGameStringAtTopLeft(L"Fixing 1024X768", 8);
-	// ÐÞÕý1024X768ÏÂÑü´øÖÐÎïÆ·µÄÎ»ÖÃ£¬²Î¿¼belts.txt£¬ÐÞÕýµÚÒ»²¿·Ö£¨ÓÃÓÚ640X480·Ö±æÂÊ£©
+	// ä¿®æ­£1024X768ä¸‹è…°å¸¦ä¸­ç‰©å“çš„ä½ç½®ï¼Œå‚è€ƒbelts.txtï¼Œä¿®æ­£ç¬¬ä¸€éƒ¨åˆ†ï¼ˆç”¨äºŽ640X480åˆ†è¾¨çŽ‡ï¼‰
 	DWORD *BeltTbl = D2COMMON_pBeltLocationTbl;
 	DWORD *p;
 	int i,j;
 	
 	p = BeltTbl;
-	for (i=0;i<14;i++)	// Ò»¹²ÐèÒªÐÞÕý14Ìõ¼ÇÂ¼
+	for (i=0;i<14;i++)	// ä¸€å…±éœ€è¦ä¿®æ­£14æ¡è®°å½•
 	{
-		p++;p++;	// Ìø¹ý×îÇ°ÃæµÄÁ½¸öDWORD
+		p++;p++;	// è·³è¿‡æœ€å‰é¢çš„ä¸¤ä¸ªDWORD
 		for (j=0;j<16;j++)
 		{
 			if (*p != 0) (*p) = (*p) + 194;	// Left
@@ -5831,11 +5831,11 @@ DWORD HR1024X768_FixMPQ()
 		}
 	}
 	
-	// ÐÞÕý1024X768ÏÂÉíÉÏÎïÆ·µÄÎ»ÖÃ£¬²Î¿¼invertory.txt£¬ÐÞÕýµÚÒ»²¿·Ö£¨ÓÃÓÚ640X480·Ö±æÂÊ£©
+	// ä¿®æ­£1024X768ä¸‹èº«ä¸Šç‰©å“çš„ä½ç½®ï¼Œå‚è€ƒinvertory.txtï¼Œä¿®æ­£ç¬¬ä¸€éƒ¨åˆ†ï¼ˆç”¨äºŽ640X480åˆ†è¾¨çŽ‡ï¼‰
 	DWORD *InvTbl = D2COMMON_pInvLocationTbl;
 	
 	p = InvTbl;
-	for (i=0;i<16;i++)	// Ò»¹²ÐèÒªÐÞÕý16Ìõ¼ÇÂ¼£¬Ö»ÐèÒªÐÞÕý¸÷¸ö½ÇÉ«ÔÚ640X480·Ö±æÂÊÏÂÃæµÄ²ÎÊý
+	for (i=0;i<16;i++)	// ä¸€å…±éœ€è¦ä¿®æ­£16æ¡è®°å½•ï¼Œåªéœ€è¦ä¿®æ­£å„ä¸ªè§’è‰²åœ¨640X480åˆ†è¾¨çŽ‡ä¸‹é¢çš„å‚æ•°
 	{
 		for (j=0;j<12;j++)
 		{
@@ -5867,7 +5867,7 @@ void __declspec(naked) HR1024X768_FixOffset_ASM()
 }
 
 
-// ºº×Ö½ÇÉ«Ãû×ÖÖ§³Ö
+// æ±‰å­—è§’è‰²åå­—æ”¯æŒ
 int __stdcall UnicodeCharNameCheck(void *unk1, void *unk2, char *lpCharName)
 {
 	char thechar;

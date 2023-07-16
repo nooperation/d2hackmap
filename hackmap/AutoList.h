@@ -12,7 +12,7 @@ template<class Cont>
 class AutoList : public std::set<typename Cont::key_type>
 {
 public:
-	//防止隐式转换，定义公共函数AutoList 变量x，并把cout_赋值给x
+	//闃叉闅愬紡杞崲锛屽畾涔夊叕鍏卞嚱鏁癆utoList 鍙橀噺x锛屽苟鎶奵out_璧嬪�肩粰x
 	explicit AutoList(Cont& x):cont_(x)
 	{
 		

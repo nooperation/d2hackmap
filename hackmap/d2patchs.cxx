@@ -8,7 +8,7 @@ Patch_t a1024X768ResolutionPatchs[] = {
 	{PatchVALUE,  DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x23ED),   0x400, 2, -1},	// 6FAA23EC
 	{PatchVALUE,  DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x23F7),   0x0300, 2, -1}, 
 	
-	// ÐÞ¸ÄD2Direct3D£¬Ê¹ÔÚÈ«ÆÁÄ£Ê½ÏÂÏÔÊ¾ÕýÈ·µÄ1024X768
+	// ä¿®æ”¹D2Direct3Dï¼Œä½¿åœ¨å…¨å±æ¨¡å¼ä¸‹æ˜¾ç¤ºæ­£ç¡®çš„1024X768
 	{PatchVALUE,  DLLOFFSET(D2Direct3D, DLLBASE_D2Direct3D+0x205D),   0x0400, 2, -1}, 
 	{PatchVALUE,  DLLOFFSET(D2Direct3D, DLLBASE_D2Direct3D+0x2067),   0x0300, 2, -1}, 
 	{PatchVALUE,  DLLOFFSET(D2Direct3D, DLLBASE_D2Direct3D+0x2CDD),   0x0400, 2, -1}, 
@@ -62,18 +62,18 @@ Patch_t aD2LocalePatchs2[] = {
 
 
 	// Unicode CharName Support
-	{PatchVALUE,   DLLOFFSET(D2LAUNCH, DLLBASE_D2LAUNCH+0xBB93),   (DWORD)UnicodeCharNameCheck, 4, -1}, // ¼ì²éUnicodeCharNameµÄºÏ·¨ÐÔ
-	{PatchVALUE,   DLLOFFSET(D2LAUNCH, DLLBASE_D2LAUNCH+0x14578),   (DWORD)0x6FA31044, 4, -1}, // unicode2WinÌæ»»µôUnicode::toUtf£¬·¢ËÍ0x68µÇÂ¼·þÎñÆ÷±¨ÎÄ
-	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x62026),   (DWORD)0x00000FB8, 4, -1}, // mov eax,0Fh Ìæ»»µôcall    ds:?unicodenwidth@Unicode@@SIIPBDH@Z£¬Party´°¿ÚÖÐÎÄÍæ¼ÒÃû×Ö³¤¶È¼ÆËã
-	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x6202A),   (DWORD)0xF08B9000, 4, -1}, // nop Ìæ»»µôcall    ds:?unicodenwidth@Unicode@@SIIPBDH@Z£¬Party´°¿ÚÖÐÎÄÍæ¼ÒÃû×Ö³¤¶È¼ÆËã
-	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x6202F),   (DWORD)0x7610FE83, 4, -1}, // cmp     esi, 10hÌæ»»µôcmp     esi, 0Bh£¬Party´°¿ÚÖÐÎÄÍæ¼ÒÃû×Ö³¤¶ÈÏÞÖÆ
-	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x62064),   (DWORD)0x6FB6DAC8, 4, -1}, // win2UnicodeÌæ»»µôUnicode::toUnicode£¬Party´°¿ÚÏÔÊ¾ÖÐÎÄÍæ¼ÒÃû×Ö
-	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x624A9),   (DWORD)0x6FB6DAC8, 4, -1}, // win2UnicodeÌæ»»µôUnicode::toUnicode
-	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x2ECA7),   (DWORD)0x6FB6DAC8, 4, -1}, // win2UnicodeÌæ»»µôUnicode::toUnicode£¬ÔÚÐ¡µØÍ¼ÉÏÏÔÊ¾Íæ¼ÒÃû×Ö
-	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x3ACCD),   (DWORD)0x6FB6DAC8, 4, -1}, // win2UnicodeÌæ»»µôUnicode::toUnicode£¬ÔÚ×é¶ÓÍ¼±êÀïÏÔÊ¾Íæ¼ÒÃû×Ö
+	{PatchVALUE,   DLLOFFSET(D2LAUNCH, DLLBASE_D2LAUNCH+0xBB93),   (DWORD)UnicodeCharNameCheck, 4, -1}, // æ£€æŸ¥UnicodeCharNameçš„åˆæ³•æ€§
+	{PatchVALUE,   DLLOFFSET(D2LAUNCH, DLLBASE_D2LAUNCH+0x14578),   (DWORD)0x6FA31044, 4, -1}, // unicode2Winæ›¿æ¢æŽ‰Unicode::toUtfï¼Œå‘é€0x68ç™»å½•æœåŠ¡å™¨æŠ¥æ–‡
+	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x62026),   (DWORD)0x00000FB8, 4, -1}, // mov eax,0Fh æ›¿æ¢æŽ‰call    ds:?unicodenwidth@Unicode@@SIIPBDH@Zï¼ŒPartyçª—å£ä¸­æ–‡çŽ©å®¶åå­—é•¿åº¦è®¡ç®—
+	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x6202A),   (DWORD)0xF08B9000, 4, -1}, // nop æ›¿æ¢æŽ‰call    ds:?unicodenwidth@Unicode@@SIIPBDH@Zï¼ŒPartyçª—å£ä¸­æ–‡çŽ©å®¶åå­—é•¿åº¦è®¡ç®—
+	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x6202F),   (DWORD)0x7610FE83, 4, -1}, // cmp     esi, 10hæ›¿æ¢æŽ‰cmp     esi, 0Bhï¼ŒPartyçª—å£ä¸­æ–‡çŽ©å®¶åå­—é•¿åº¦é™åˆ¶
+	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x62064),   (DWORD)0x6FB6DAC8, 4, -1}, // win2Unicodeæ›¿æ¢æŽ‰Unicode::toUnicodeï¼ŒPartyçª—å£æ˜¾ç¤ºä¸­æ–‡çŽ©å®¶åå­—
+	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x624A9),   (DWORD)0x6FB6DAC8, 4, -1}, // win2Unicodeæ›¿æ¢æŽ‰Unicode::toUnicode
+	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x2ECA7),   (DWORD)0x6FB6DAC8, 4, -1}, // win2Unicodeæ›¿æ¢æŽ‰Unicode::toUnicodeï¼Œåœ¨å°åœ°å›¾ä¸Šæ˜¾ç¤ºçŽ©å®¶åå­—
+	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x3ACCD),   (DWORD)0x6FB6DAC8, 4, -1}, // win2Unicodeæ›¿æ¢æŽ‰Unicode::toUnicodeï¼Œåœ¨ç»„é˜Ÿå›¾æ ‡é‡Œæ˜¾ç¤ºçŽ©å®¶åå­—
 
 	// Unicode GameName Support
-	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x2EF56),   (DWORD)0x6FB6DAC8, 4, -1}, // win2UnicodeÌæ»»µôUnicode::toUnicode£¬ÖÐÎÄÓÎÏ·Ãû
+	{PatchVALUE,   DLLOFFSET(D2CLIENT, DLLBASE_D2CLIENT+0x2EF56),   (DWORD)0x6FB6DAC8, 4, -1}, // win2Unicodeæ›¿æ¢æŽ‰Unicode::toUnicodeï¼Œä¸­æ–‡æ¸¸æˆå
 };
 
 Patch_t aD2Patchs[] = {
