@@ -1,0 +1,24 @@
+version: 1.0.{build}
+pull_requests:
+  do_not_increment_build_number: true
+skip_tags: true
+image: Visual Studio 2022
+configuration: Release
+platform: x86
+build:
+  project: d2hackmap.sln
+  verbosity: minimal
+after_build:
+- cmd: >-
+    7z a %APPVEYOR_PROJECT_NAME%_v%APPVEYOR_BUILD_VERSION%.zip %APPVEYOR_BUILD_FOLDER%\build\release\*.*
+
+    7z a %APPVEYOR_PROJECT_NAME%_v%APPVEYOR_BUILD_VERSION%.zip %APPVEYOR_BUILD_FOLDER%\resources\*.*
+artifacts:
+- path: '*.zip'
+  name: d2hackmap_v${APPVEYOR_BUILD_VERSION}
+  type: WebDeployPackage
+deploy:
+- provider: Environment
+  name: Github
+  on:
+    branch: Master
