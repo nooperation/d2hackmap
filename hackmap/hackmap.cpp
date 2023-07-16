@@ -4298,12 +4298,12 @@ void __fastcall KeydownPatch(BYTE keycode, BYTE repeat)
   if (keycode == vkFirstPlayerStat) SetCurrentPlayerStat(0);
   if (keycode == vkNextPlayerStat) SetCurrentPlayerStat(1);
   if (keycode == vkPrevPlayerStat) SetCurrentPlayerStat(-1);
-  if (keycode == vkAutoDropItem)
-  {
-	  UnitAny *pla = D2CLIENT_GetPlayerUnit();
-	  UnitAny *item = D2COMMON_GetCursorItem(pla->pInventory);
-	  D2CLIENT_PrintGameStringAtTopLeft(L"卧槽，我要扔东西了", 8);
-  }
+  //if (keycode == vkAutoDropItem)
+  //{
+	//  UnitAny *pla = D2CLIENT_GetPlayerUnit();
+	//  UnitAny *item = D2COMMON_GetCursorItem(pla->pInventory);
+	//  D2CLIENT_PrintGameStringAtTopLeft(L"卧槽，我要扔东西了", 8);
+  //}
   for (int i = 0; i < ARRAYSIZE(viewingList); i++) {
     if (keycode == viewingList[i]->vkKeyCode)
       viewingList[i]->OpenView();
