@@ -1,3 +1,4 @@
+/*
 Patch_t a1024X768ResolutionPatchs[] = {
 	{PatchCALL,   DLLOFFSET(D2COMMON, DLLBASE_D2COMMON+0x107A5),   (DWORD)HR1024X768_FixMPQ, 5, -1},
 	{PatchVALUE,   DLLOFFSET(D2COMMON, DLLBASE_D2COMMON+0x107AA),  0x000CC2, 3, -1}, 
@@ -24,6 +25,7 @@ Patch_t a1024X768ResolutionPatchs[] = {
 	{PatchVALUE,  DLLOFFSET(D2GFX, DLLBASE_D2GFX+0x4B61),   0x0400, 2, -1}, // 6FA74B5D
 	{PatchVALUE,  DLLOFFSET(D2GFX, DLLBASE_D2GFX+0x4B66),   0x0300, 2, -1}, 
 };
+*/
 
 Patch_t aSleepyPatchs1[] = {
 	{PatchVALUE,  DLLOFFSET(D2WIN, DLLBASE_D2WIN+0xD071),   0x90, 1, -1},
@@ -282,7 +284,7 @@ PatchItem_t aD2PatchItems[] = {
 	{aSleepyPatchs1, ARRAYSIZE(aSleepyPatchs1)},
 	{aSleepyPatchs2, ARRAYSIZE(aSleepyPatchs2),1},
 	{aD2PacketHandlerPatchs, ARRAYSIZE(aD2PacketHandlerPatchs)},
-	{a1024X768ResolutionPatchs, ARRAYSIZE(a1024X768ResolutionPatchs)},
+	//{a1024X768ResolutionPatchs, ARRAYSIZE(a1024X768ResolutionPatchs)},
 	{aKeepGameWindowPatchs, ARRAYSIZE(aKeepGameWindowPatchs), 1},
 	{aPacketRecvPatchs, ARRAYSIZE(aPacketRecvPatchs), 1},
 	{aD2LocalePatchs, ARRAYSIZE(aD2LocalePatchs), 1},
