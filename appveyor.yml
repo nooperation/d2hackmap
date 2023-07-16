@@ -12,6 +12,8 @@ after_build:
 - cmd: >-
     7z a %APPVEYOR_PROJECT_NAME%_v%APPVEYOR_BUILD_VERSION%.zip %APPVEYOR_BUILD_FOLDER%\build\release\d2hackmap.dll
 
+    7z a %APPVEYOR_PROJECT_NAME%_v%APPVEYOR_BUILD_VERSION%_symbols.zip %APPVEYOR_BUILD_FOLDER%\build\release\d2hackmap.pdb
+
     7z a %APPVEYOR_PROJECT_NAME%_v%APPVEYOR_BUILD_VERSION%.zip %APPVEYOR_BUILD_FOLDER%\resources\*.*
 artifacts:
 - path: '*.zip'
