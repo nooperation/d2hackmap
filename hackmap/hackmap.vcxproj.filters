@@ -40,35 +40,31 @@
     <ClCompile Include="ModuleWalker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="d2helpers.cxx">
-      <Filter>Not Compile Files</Filter>
-    </ClCompile>
-    <ClCompile Include="d2patchs.cxx">
-      <Filter>Not Compile Files</Filter>
-    </ClCompile>
-    <ClCompile Include="d2ptrs.cxx">
-      <Filter>Not Compile Files</Filter>
-    </ClCompile>
-    <ClCompile Include="exception.cxx">
-      <Filter>Not Compile Files</Filter>
-    </ClCompile>
-    <ClCompile Include="hnmconfig.cxx">
-      <Filter>Not Compile Files</Filter>
-    </ClCompile>
-    <ClCompile Include="hnmtoggles.cxx">
-      <Filter>Not Compile Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="hackmap.def">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="..\bin\d2hackmap.cfg" />
-    <None Include="..\bin\d2hackmap.cfg.tmpl" />
-    <None Include="..\bin\d2hackmap.vcb" />
-    <None Include="..\bin\d2hackmap.vcb.tmpl" />
     <None Include="D2HACKMAP.CFG">
       <Filter>Source Files</Filter>
+    </None>
+    <None Include="hnmtoggles.cxx">
+      <Filter>Not Compile Files</Filter>
+    </None>
+    <None Include="hnmconfig.cxx">
+      <Filter>Not Compile Files</Filter>
+    </None>
+    <None Include="exception.cxx">
+      <Filter>Not Compile Files</Filter>
+    </None>
+    <None Include="d2ptrs.cxx">
+      <Filter>Not Compile Files</Filter>
+    </None>
+    <None Include="d2patchs.cxx">
+      <Filter>Not Compile Files</Filter>
+    </None>
+    <None Include="d2helpers.cxx">
+      <Filter>Not Compile Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
