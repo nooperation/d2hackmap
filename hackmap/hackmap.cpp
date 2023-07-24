@@ -51,7 +51,1370 @@ BYTE fSleepy = 0;
 
 #include "d2ptrs.cxx"
 #include "d2helpers.cxx"
-#include "hnmtoggles.cxx"
+
+
+class ViewingPlayerInfo
+{
+public:
+    void OpenView();
+    void ViewLoop();
+    ViewingPlayerInfo() :nPlayerId(-1), nUnitType(-1), nUnitNo(-1), vkKeyCode(-1) {}
+    BOOL TestUnit(UnitAny* unit);
+    virtual void CreateUI() = 0;
+    virtual void DestroyUI() = 0;
+    virtual DWORD GetUI() = 0;
+private:
+    friend UnitAny* __fastcall ViewingGetUnit(ViewingPlayerInfo* vpi, UnitAny* unitdef);
+private:
+    DWORD nPlayerId;
+    DWORD nUnitType;
+    DWORD nUnitNo;
+public:
+    BYTE  vkKeyCode;
+};
+
+class ViewingInventoryInfo : public ViewingPlayerInfo
+{
+public:
+    virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_INVENTORY, 0, 1); }
+    virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_INVENTORY, 1, 1); }
+    virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_INVENTORY); }
+};
+
+void ViewingPlayerInfo::OpenView()
+{
+    UnitAny* unitpla = D2CLIENT_GetSelectedUnit();
+    if (!unitpla || !TestUnit(unitpla)) return;
+
+    CreateUI();
+
+    if (unitpla->nUnitType == UNITNO_MONSTER && (nPlayerId = D2CLIENT_GetMonsterOwner(unitpla->nUnitId)) != -1) {
+        nUnitType = 0;
+        nUnitNo = D2CLIENT_GetUnitNoFromId(unitpla->nUnitId);
+    }
+    else {
+        nUnitType = unitpla->nUnitType;
+        nUnitNo = -1;
+        nPlayerId = unitpla->nUnitId;
+    }
+}
+
+void ViewingPlayerInfo::ViewLoop()
+{
+    if (nPlayerId != -1) {
+        if (!GetUI() || !TestUnit(ViewingGetUnit(this, NULL))) {
+            nPlayerId = -1;
+            if (GetUI()) {
+                CreateUI();
+            }
+        }
+    }
+}
+
+
+//monsters automap blob stuff
+
+#define _0 -2
+#define _1 -1
+
+BYTE anMonsterColours[1000] = {
+  _1, //0 Skeleton
+  _1, //1 Returned
+  _1, //2 BoneWarrior
+  _1, //3 BurningDead
+  _1, //4 Horror
+  _1, //5 Zombie
+  _1, //6 HungryDead
+  _1, //7 Ghoul
+  _1, //8 DrownedCarcass
+  _1, //9 PlagueBearer
+  _1, //10 Afflicted
+  _1, //11 Tainted
+  _1, //12 Misshapen
+  _1, //13 Disfigured
+  _1, //14 Damned
+  _1, //15 FoulCrow
+  _1, //16 BloodHawk
+  _1, //17 BlackRaptor
+  _1, //18 CloudStalker
+  _1, //19 Fallen
+  _1, //20 Carver
+  _1, //21 Devilkin
+  _1, //22 DarkOne
+  _1, //23 WarpedFallen
+  _1, //24 Brute
+  _1, //25 Yeti
+  _1, //26 Crusher
+  _1, //27 WailingBeast
+  _1, //28 GargantuanBeast
+  _1, //29 SandRaider
+  _1, //30 Marauder
+  _1, //31 Invader
+  _1, //32 Infidel
+  _1, //33 Assailant
+  _1, //34 unused, Gorgon
+  _1, //35 unused, StoneStalker
+  _1, //36 unused, SerpentQueen
+  _1, //37 unused, StygianWatcher
+  _1, //38 Ghost
+  _1, //39 Wraith
+  _1, //40 Specter
+  _1, //41 Apparition
+  _1, //42 DarkShape
+  _1, //43 DarkHunter
+  _1, //44 VileHunter
+  _1, //45 DarkStalker
+  _1, //46 BlackRogue
+  _1, //47 FleshHunter
+  _1, //48 DuneBeast
+  _1, //49 RockDweller
+  _1, //50 JungleHunter
+  _1, //51 DoomApe
+  _1, //52 TempleGuard
+  _1, //53 MoonClan
+  _1, //54 NightClan
+  _1, //55 BloodClan
+  _1, //56 HellClan
+  _1, //57 DeathClan
+  _1, //58 FallenShaman
+  _1, //59 CarverShaman
+  _1, //60 DevilkinShaman
+  _1, //61 DarkShaman
+  _1, //62 WarpedShaman
+  _1, //63 QuillRat
+  _1, //64 SpikeFiend
+  _1, //65 ThornBeast
+  _1, //66 RazorSpine
+  _1, //67 JungleUrchin
+  _1, //68 SandMaggot
+  _1, //69 RockWorm
+  _1, //70 Devourer
+  _1, //71 GiantLamprey
+  _1, //72 WorldKiller
+  _1, //73 TombViper
+  _1, //74 ClawViper
+  _1, //75 Salamander
+  _1, //76 PitViper
+  _1, //77 SerpentMagus
+  _1, //78 SandLeaper
+  _1, //79 CaveLeaper
+  _1, //80 TombCreeper
+  _1, //81 TreeLurker
+  _1, //82 RazorPitDemon
+  _1, //83 Huntress
+  _1, //84 SaberCat
+  _1, //85 NightTiger
+  _1, //86 HellCat
+  _1, //87 Itchies
+  _1, //88 BlackLocusts
+  _1, //89 PlagueBugs
+  _1, //90 HellSwarm
+  _1, //91 DungSoldier
+  _1, //92 SandWarrior
+  _1, //93 Scarab
+  _1, //94 SteelWeevil
+  _1, //95 AlbinoRoach
+  _1, //96 DriedCorpse
+  _1, //97 Decayed
+  _1, //98 Embalmed
+  _1, //99 PreservedDead
+  _1, //100 Cadaver
+  _1, //101 HollowOne
+  _1, //102 Guardian
+  _1, //103 Unraveler
+  _1, //104 Horadrim Ancient
+  _1, //105 Baal Subject Mummy
+  _1, //106 unused, DamnedHorde
+  _1, //107 unused, TwistedHorde
+  _1, //108 unused, WickedHorde
+  _1, //109 unused, UnholyHorde
+  _1, //110 CarrionBird
+  _1, //111 UndeadScavenger
+  _1, //112 HellBuzzard
+  _1, //113 WingedNightmare
+  _1, //114 Sucker
+  _1, //115 Feeder
+  _1, //116 BloodHook
+  _1, //117 BloodWing
+  _1, //118 Gloam
+  _1, //119 SwampGhost
+  _1, //120 BurningSoul
+  _1, //121 BlackSoul
+  _1, //122 Arach
+  _1, //123 SandFisher
+  _1, //124 PoisonSpinner
+  _1, //125 FlameSpider
+  _1, //126 SpiderMagus
+  _1, //127 ThornedHulk
+  _1, //128 BrambleHulk
+  _1, //129 Thrasher
+  _1, //130 Spikefist
+  _1, //131 GhoulLord
+  _1, //132 NightLord
+  _1, //133 DarkLord
+  _1, //134 BloodLord
+  _1, //135 Banished
+  _1, //136 DesertWing
+  _1, //137 Fiend
+  _1, //138 Gloombat
+  _1, //139 BloodDiver
+  _1, //140 DarkFamiliar
+  _1, //141 RatMan
+  _1, //142 Fetish
+  _1, //143 Flayer
+  _1, //144 SoulKiller
+  _1, //145 StygianDoll
+  _0, //146 DeckardCain
+  _0, //147 Gheed
+  _0, //148 Akara
+  _0, //149 dummy, chicken
+  _0, //150 Kashya
+  _0, //151 dummy, rat
+  _0, //152 Dummy, RogueTown
+  _0, //153 Dummy, HellMeteor
+  _0, //154 Charsi
+  _0, //155 Warriv
+  _1, //156 Andariel
+  _0, //157 dummy, Smallbird
+  _0, //158 dummy, Largebird
+  _0, //159 dummy, Bat
+  _1, //160 DarkRanger
+  _1, //161 VileArcher
+  _1, //162 DarkArcher
+  _1, //163 BlackArcher
+  _1, //164 FleshArcher
+  _1, //165 DarkSpearwoman
+  _1, //166 VileLancer
+  _1, //167 DarkLancer
+  _1, //168 BlackLancer
+  _1, //169 FleshLancer
+  _1, //170 SkeletonArcher
+  _1, //171 ReturnedArcher
+  _1, //172 BoneArcher
+  _1, //173 BurningDeadArcher
+  _1, //174 HorrorArcher
+  _0, //175 Warriv
+  _0, //176 Atma
+  _0, //177 Drognan
+  _0, //178 Fara
+  _0, //179 dummy, Cow
+  _1, //180 SandMaggotYoung
+  _1, //181 RockWormYoung
+  _1, //182 DevourerYoung
+  _1, //183 GiantLampreyYoung
+  _1, //184 WorldKillerYoung
+  _0, //185 dummy, Camel
+  _1, //186 Blunderbore
+  _1, //187 Gorbelly
+  _1, //188 Mauler
+  _1, //189 Urdar
+  _1, //190 SandMaggotEgg
+  _1, //191 RockWormEgg
+  _1, //192 DevourerEgg
+  _1, //193 GiantLampreyEgg
+  _1, //194 WorldKillerEgg
+  _0, //195 dummy, Act2Male
+  _0, //196 Dummy, Act2Female
+  _0, //197 dummy, Act2Child
+  _0, //198 Greiz
+  _0, //199 Elzix
+  _0, //200 Geglash
+  _0, //201 Jerhyn
+  _0, //202 Lysander
+  _0, //203 Dummy, Act2Guard
+  _0, //204 dummy, Act2Vendor1
+  _0, //205 dummy, Act2Vendor2
+  _1, //206 FoulCrowNest
+  _1, //207 BloodHawkNest
+  _1, //208 BlackVultureNest
+  _1, //209 CloudStalkerNest
+  _0, //210 Meshif
+  _1, //211 Duriel
+  _1, //212 Undead RatMan
+  _1, //213 Undead Fetish
+  _1, //214 Undead Flayer
+  _1, //215 Undead SoulKiller
+  _1, //216 Undead StygianDoll
+  _1, //217 unused, DarkGuard
+  _1, //218 unused, DarkKnight
+  _1, //219 unused, BloodGuard
+  _1, //220 unused, BloodKnight
+  _1, //221 unused, DarkPaladin
+  _1, //222 unused, BloodMage
+  _1, //223 unused, Demonist
+  _1, //224 unused, BlackMagus
+  _1, //225 unused, Diabolist
+  _1, //226 unused, DeathMage
+  _0, //227 Maggot
+  _1, //228 MummyGenerator
+  _1, //229 Radament
+  _1, //230 unused, FireBeast
+  _1, //231 unused, IceGlobe
+  _1, //232 unused, LightningBeast
+  _1, //233 unused, PoisonOrb
+  _1, //234 FlyingScimitar
+  _1, //235 Zakarumite
+  _1, //236 Faithful
+  _1, //237 Zealot
+  _1, //238 Sexton
+  _1, //239 Cantor
+  _1, //240 Heirophant
+  _1, //241 Heirophant
+  _1, //242 Mephisto
+  _1, //243 Diablo
+  _0, //244 DeckardCain
+  _0, //245 DeckardCain
+  _0, //246 DeckardCain
+  _1, //247 Swamp Dweller
+  _1, //248 Bog Creature
+  _1, //249 Slime Prince
+  _1, //250 Summoner
+  _0, //251 tyrael
+  _0, //252 asheara
+  _0, //253 hratli
+  _0, //254 alkor
+  _0, //255 ormus
+  _1, //256 izual
+  _0, //257 halbu
+  _1, //258 WaterWatcherLimb
+  _1, //259 RiverStalkerLimb
+  _1, //260 StygianWatcherLimb
+  _1, //261 WaterWatcherHead
+  _1, //262 RiverStalkerHead
+  _1, //263 StygianWatcherHead
+  _0, //264 meshif
+  _0, //265 DeckardCain
+  _0, //266 navi (flavie)
+  _1, //267 Bloodraven
+  _0, //268 Dummy, bug
+  _0, //269 Dummy, scorpion
+  _1, //270 RogueScout
+  _1, //271 Dummy, RogueHireling (act1 hireling)
+  _0, //272 Dummy, RogueTownShoot
+  _1, //273 GargoyleTrap
+  _1, //274 ReturnedMage
+  _1, //275 BoneMage
+  _1, //276 BurningDeadMage
+  _1, //277 HorrorMage
+  _1, //278 RatManShaman
+  _1, //279 FetishShaman
+  _1, //280 FlayerShaman
+  _1, //281 SoulKillerShaman
+  _1, //282 StygianDollShaman
+  _0, //283 larva
+  _1, //284 SandMaggotQueen
+  _1, //285 RockWormQueen
+  _1, //286 DevourerQueen
+  _1, //287 GiantLampreyQueen
+  _1, //288 WorldKillerQueen
+  _1, //289 ClayGolem
+  _1, //290 BloodGolem
+  _1, //291 IronGolem
+  _1, //292 FireGolem
+  _0, //293 Dummy, Familiar
+  _0, //294 Dummy, Act3Male
+  _1, //295 NightMarauder
+  _0, //296 Dummy, Act3Female
+  _0, //297 Natalya
+  _1, //298 FleshSpawner
+  _1, //299 StygianHag
+  _1, //300 Grotesque
+  _1, //301 FleshBeast
+  _1, //302 StygianDog
+  _1, //303 GrotesqueWyrm
+  _1, //304 Groper
+  _1, //305 Strangler
+  _1, //306 StormCaster
+  _1, //307 Corpulent
+  _1, //308 CorpseSpitter
+  _1, //309 MawFiend
+  _1, //310 DoomKnight
+  _1, //311 AbyssKnight
+  _1, //312 OblivionKnight
+  _1, //313 QuillBear
+  _1, //314 SpikeGiant
+  _1, //315 ThornBrute
+  _1, //316 RazorBeast
+  _1, //317 GiantUrchin
+  _0, //318 Dummy, Snake
+  _0, //319 Dummy, Parrot
+  _0, //320 Dummy, Fish
+  _0, //321 Dummy, Evil Hole
+  _0, //322 Dummy, Evil Hole
+  _0, //323 Dummy, Evil Hole
+  _0, //324 Dummy, Evil Hole
+  _0, //325 Dummy, Evil Hole
+  _0, //326 a trap, trapfirebolt
+  _0, //327 a trap
+  _0, //328 a trap (act2 wall, act3 totem)
+  _0, //329 a trap, trappoison
+  _0, //330 a trap, trapchainlightning
+  _0, //331 Kaelan
+  _0, //332 Dummy, InvisoSpawner
+  _1, //333 unused, DiabloClone
+  _1, //334 SuckerNest
+  _1, //335 FeederNest
+  _1, //336 BloodHookNest
+  _1, //337 BloodWingNest
+  _1, //338 Guard (act2 hireling)
+  _0, //339 Dummy, MiniSpider
+  _1, //340 x, PrisonFL
+  _1, //341 x, PrisonFR
+  _1, //342 x, PrisonBL
+  _1, //343 x, PrisonBR
+  _0, //344 Dummy, Bonewall*
+  _1, //345 Council Member
+  _1, //346 Council Member
+  _1, //347 Council Member
+  _1, //348 Turret1
+  _1, //349 Turret2
+  _1, //350 Turret3
+  _0, //351 Hydra1
+  _0, //352 Hydra2
+  _0, //353 Hydra3
+  _1, //354 a trap, pillar
+  _0, //355 Dummy, seven tombs
+  _1, //356 Dopplezon
+  _1, //357 Valkyrie
+  _0, //358 Dummy, Act2Hireling
+  _0, //359 Iron Wolf (act3 town+hireling)*
+  _1, //360 Balrog
+  _1, //361 PitLord
+  _1, //362 VenomLord
+  _1, //363 NecroSkeleton (necro skel)
+  _1, //364 NecroMage (necro mage)
+  _1, //365 Griswold
+  _0, //366 compellingorb
+  _0, //367 tyrael
+  _0, //368 youngdiablo
+  _0, //369 a trap, nova
+  _1, //370 Dummy, SpiritMummy
+  _1, //371 LightningSpire
+  _1, //372 FireTower
+  _1, //373 Slinger
+  _1, //374 SpearCat
+  _1, //375 NightSlinger
+  _1, //376 HellSlinger
+  _0, //377 Dummy, Boba Fett
+  _0, //378 Dummy, Darth Maul
+  _1, //379 ReturnedMage
+  _1, //380 BoneMage
+  _1, //381 BaalColdMage
+  _1, //382 HorrorMage
+  _1, //383 ReturnedMage
+  _1, //384 BoneMage
+  _1, //385 BurningDeadMage
+  _1, //386 HorrorMage
+  _1, //387 ReturnedMage
+  _1, //388 BoneMage
+  _1, //389 BurningDeadMage
+  _1, //390 HorrorMage
+  _1, //391 Hell Bovine
+  _0, //392 x, window right (act4 window)*
+  _0, //393 x, window left (act4 window)*
+  _1, //394 SpearCat
+  _1, //395 NightSlinger
+  _1, //396 RatMan
+  _1, //397 Fetish
+  _1, //398 Flayer
+  _1, //399 SoulKiller
+  _1, //400 StygianDoll
+  _0, //401 Dummy, Mephisto Spirit
+  _1, //402 The Smith
+  _0, //403 TrappedSoul*
+  _0, //404 TrappedSoul*
+  _0, //405 Jamella
+  _0, //406 Izual's Ghost
+  _1, //407 RatMan
+  _0, //408 Malachai?
+  _1, //409 The Feature Creep
+
+  _0, //410 Wake of Destruction
+  _0, //411 Charged Bolt Sentry
+  _0, //412 Lightning Sentry
+  _0, //413 Blade Creeper (blade sentinel)
+  _0, //414 Invis Pet*
+  _0, //415 Inferno Sentry
+  _0, //416 Death Sentry
+  _1, //417 Shadow Warrior
+  _1, //418 Shadow Master
+  _1, //419 Druid Hawk*
+  _1, //420 Druid Spirit Wolf
+  _1, //421 Druid Fenris (dire wolf)
+  _1, //422 Spirit of Barbs
+  _1, //423 Heart of Wolverine
+  _1, //424 Oak Sage
+  _1, //425 Druid Plague Poppy (poison creeper)*
+  _1, //426 Druid Cycle of Life (carrion vine)*
+  _1, //427 Vine Creature (solar creeper)*
+  _1, //428 Druid Bear
+  _1, //429 Eagle
+  _1, //430 Wolf
+  _1, //431 Bear
+  _0, //432 Barricade Door*
+  _0, //433 Barricade Door*
+  _0, //434 Prison Door*
+  _0, //435 Barricade Tower*
+  _1, //436 RotWalker
+  _1, //437 ReanimatedHorde
+  _1, //438 ProwlingDead
+  _1, //439 UnholyCorpse
+  _1, //440 DefiledWarrior
+  _1, //441 Siege Beast
+  _1, //442 CrushBiest
+  _1, //443 BloodBringer
+  _1, //444 GoreBearer
+  _1, //445 DeamonSteed
+  _1, //446 SnowYeti1
+  _1, //447 SnowYeti2
+  _1, //448 SnowYeti3
+  _1, //449 SnowYeti4
+  _1, //450 WolfRider1
+  _1, //451 WolfRider2
+  _1, //452 WolfRider3
+  _1, //453 Minionexp
+  _1, //454 Slayerexp
+  _1, //455 IceBoar
+  _1, //456 FireBoar
+  _1, //457 HellSpawn
+  _1, //458 IceSpawn
+  _1, //459 GreaterHellSpawn
+  _1, //460 GreaterIceSpawn
+  _1, //461 FanaticMinion
+  _1, //462 BerserkSlayer
+  _1, //463 ConsumedFireBoar
+  _1, //464 ConsumedIceBoar
+  _1, //465 FrenziedHellSpawn
+  _1, //466 FrenziedIceSpawn
+  _1, //467 InsaneHellSpawn
+  _1, //468 InsaneIceSpawn
+  _1, //469 Succubusexp
+  _1, //470 VileTemptress
+  _1, //471 StygianHarlot
+  _1, //472 Hell Temptress
+  _1, //473 Blood Temptress
+  _1, //474 Dominus
+  _1, //475 VileWitch
+  _1, //476 StygianFury
+  _1, //477 Blood Witch
+  _1, //478 Hell Witch
+  _1, //479 OverSeer
+  _1, //480 Lasher
+  _1, //481 OverLord
+  _1, //482 BloodBoss
+  _1, //483 HellWhip
+  _1, //484 MinionSpawner
+  _1, //485 MinionSlayerSpawner
+  _1, //486 MinionIce/fireBoarSpawner
+  _1, //487 MinionIce/fireBoarSpawner
+  _1, //488 Minionice/hellSpawnSpawner
+  _1, //489 MinionIce/fireBoarSpawner
+  _1, //490 MinionIce/fireBoarSpawner
+  _1, //491 Minionice/hellSpawnSpawner
+  _1, //492 Imp1
+  _1, //493 Imp2
+  _1, //494 Imp3
+  _1, //495 Imp4
+  _1, //496 Imp5
+  _1, //497 CatapultS
+  _1, //498 CatapultE
+  _1, //499 CatapultSiege
+  _1, //500 CatapultW
+  _1, //501 Frozen Horror1
+  _1, //502 Frozen Horror2
+  _1, //503 Frozen Horror3
+  _1, //504 Frozen Horror4
+  _1, //505 Frozen Horror5
+  _1, //506 Blood Lord1
+  _1, //507 Blood Lord2
+  _1, //508 Blood Lord3
+  _1, //509 Blood Lord4
+  _1, //510 Blood Lord5
+  _0, //511 Larzuk
+  _0, //512 Drehya
+  _0, //513 Malah
+  _0, //514 Nihlathak Town
+  _0, //515 Qual-Kehk
+  _0, //516 Catapult Spotter S (target?)
+  _0, //517 Catapult Spotter E (target?)
+  _0, //518 Catapult Spotter Siege (target?)
+  _0, //519 Catapult Spotter W
+  _0, //520 DeckardCain
+  _0, //521 tyrael
+  0xcb, //522 Act 5 Combatant (barb fighter)*
+  _0, //523 Act 5 Combatant*
+  _0, //524 Barricade Wall Right*
+  _0, //525 Barricade Wall Left*
+  _1, //526 Nihlathak outside town
+  _0, //527 Drehya outside town
+  _1, //528 Evil hut
+  _1, //529 Death Mauler1
+  _1, //530 Death Mauler2
+  _1, //531 Death Mauler3
+  _1, //532 Death Mauler4
+  _1, //533 Death Mauler5
+  _0, //534 POW (captured barb)*
+  _0, //535 Act 5 Townguard
+  _0, //536 Act 5 Townguard
+  _0, //537 Ancient Statue 1
+  _0, //538 Ancient Statue 2
+  _0, //539 Ancient Statue 3
+  _1, //540 Ancient Barbarian 1
+  _1, //541 Ancient Barbarian 2
+  _1, //542 Ancient Barbarian 3
+  _0, //543 Baal Throne
+  _1, //544 Baal Crab
+  _0, //545 Baal Taunt (invis follower)
+  _1, //546 Putrid Defiler1
+  _1, //547 Putrid Defiler2
+  _1, //548 Putrid Defiler3
+  _1, //549 Putrid Defiler4
+  _1, //550 Putrid Defiler5
+  _1, //551 Pain Worm1
+  _1, //552 Pain Worm2
+  _1, //553 Pain Worm3
+  _1, //554 Pain Worm4
+  _1, //555 Pain Worm5
+  _0, //556 Bunny
+  _1, //557 Council Member
+  _1, //558 VenomLord
+  _0, //559 Baal Crab to Stairs
+  _1, //560 Act 5 Hireling 1hs
+  _1, //561 Act 5 Hireling 2hs (act5 hireling)
+  _1, //562 Baal Tentacle
+  _1, //563 Baal Tentacle
+  _1, //564 Baal Tentacle
+  _1, //565 Baal Tentacle
+  _1, //566 Baal Tentacle
+  _0, //567 Injured Barbarian 1 (town barb)
+  _0, //568 Injured Barbarian 2 (town barb)
+  _0, //569 Injured Barbarian 3 (town barb)
+  _1, //570 Baal Crab Clone
+  _1, //571 Baals Minion
+  _1, //572 Baals Minion
+  _1, //573 Baals Minion
+  _0, //574 Worldstone Effect
+  _1, //575
+  _1, //576
+  _1, //577
+  _1, //578
+  _1, //579
+  _1, //580
+  _1, //581
+  _1, //582
+  _1, //583
+  _1, //584
+  _1, //585
+  _1, //586
+  _1, //587
+  _1, //588
+  _1, //589
+  _1, //590
+  _1, //591
+  _1, //592
+  _1, //593
+  _1, //594
+  _1, //595
+  _1, //596
+  _1, //597
+  _1, //598
+  _1, //599
+  _1, //600
+  _1, //601
+  _1, //602
+  _1, //603
+  _1, //604
+  _1, //605
+  _1, //606
+  _1, //607
+  _1, //608
+  _1, //609
+  _1, //610
+  _1, //611
+  _1, //612
+  _1, //613
+  _1, //614
+  _1, //615
+  _1, //616
+  _1, //617
+  _1, //618
+  _1, //619
+  _1, //620
+  _1, //621
+  _1, //622
+  _1, //623
+  _1, //624
+  _1, //625
+  _1, //626
+  _1, //627
+  _1, //628
+  _1, //629
+  _1, //630
+  _1, //631
+  _1, //632
+  _1, //633
+  _1, //634
+  _1, //635
+  _1, //636
+  _1, //637
+  _1, //638
+  _1, //639
+  _1, //640
+  _1, //641
+  _1, //642
+  _1, //643
+  _1, //644
+  _1, //645
+  _1, //646
+  _1, //647
+  _1, //648
+  _1, //649
+  _1, //650
+  _1, //651
+  _1, //652
+  _1, //653
+  _1, //654
+  _1, //655
+  _1, //656
+  _1, //657
+  _1, //658
+  _1, //659
+  _1, //660
+  _1, //661
+  _1, //662
+  _1, //663
+  _1, //664
+  _1, //665
+  _1, //666
+  _1, //667
+  _1, //668
+  _1, //669
+  _1, //670
+  _1, //671
+  _1, //672
+  _1, //673
+  _1, //674
+  _1, //675
+  _1, //676
+  _1, //677
+  _1, //678
+  _1, //679
+  _1, //680
+  _1, //681
+  _1, //682
+  _1, //683
+  _1, //684
+  _1, //685
+  _1, //686
+  _1, //687
+  _1, //688
+  _1, //689
+  _1, //690
+  _1, //691
+  _1, //692
+  _1, //693
+  _1, //694
+  _1, //695
+  _1, //696
+  _1, //697
+  _1, //698
+  _1, //699
+  _1, //700
+  _1, //701
+  _1, //702
+  _1, //703
+};
+
+#undef _0
+#undef _1
+
+class ViewingStatsInfo : public ViewingPlayerInfo
+{
+public:
+    virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_STATS, 0, 1); }
+    virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_STATS, 1, 1); }
+    virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_STATS); }
+};
+
+class ViewingSkillsInfo : public ViewingPlayerInfo
+{
+public:
+    virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_SKILLS, 2, 1); }
+    virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_SKILLS, 1, 1); }
+    virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_SKILLS); }
+};
+
+class ViewingQuestInfo : public ViewingPlayerInfo
+{
+public:
+    virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_QUEST, 0, 1); }
+    virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_QUEST, 1, 1); }
+    virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_QUEST); }
+};
+
+class ViewingPetInfo : public ViewingPlayerInfo
+{
+public:
+    virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_PET, 2, 1); }
+    virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_PET, 1, 1); }
+    virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_PET); }
+};
+
+ViewingInventoryInfo viewingInventory;
+ViewingStatsInfo viewingStats;
+ViewingSkillsInfo viewingSkills;
+ViewingPetInfo viewingPet;
+ViewingQuestInfo viewingQuestInfo;
+
+BYTE vkRevealAct = VK_SUBTRACT;
+BYTE vkRevealLevel = -1;
+BYTE vkCenterMap = VK_PAUSE;
+BYTE vkExitGame = -1;
+BYTE vkQuickNextGame = -1;
+BYTE vkBackToTown = VK_BACK;
+BYTE vkAutoDropItem = VK_OEM_3;
+BYTE vkFirstPlayerStat = -1;
+BYTE vkNextPlayerStat = -1;
+BYTE vkPrevPlayerStat = -1;
+
+BYTE* szEtherealItemPrefix = NULL;
+BYTE* szEtherealItemPostfix = NULL;
+
+BYTE nMinimapCellCol[2] = { 0x84,12 };
+BYTE nMinimapSize = 1;
+
+BYTE fAutomapPartyDefault = 1;
+BYTE fAutomapNamesDefault = 1;
+
+BYTE nCaveNameTextCol = 0;
+BYTE* szStaffTombLvlDesc;
+
+char* szLocaleMPQ;
+BYTE fLocalizationSupport = 1;
+
+char nQuestItemColour = -1;
+char nUnk1ItemColour = 1;
+int nItemValueNpc = 0x201;
+char nMonsterColor = -1;
+
+BYTE* aszEnchantDescs[50];
+BYTE* aszAuraDescs[7];
+BYTE* aszImmuneDescs[6];
+BYTE nMonsterTextCol = 1;
+
+char anRuneColours[100][2];
+int nGoldGoodNum = 0;
+char nGoldGoodCol[2] = { -1,-1 };
+char nGoldPoorCol[2] = { -1,-1 };
+
+BYTE fVersionCheckingDllAction;
+BYTE fExtraworkDllAction = 1;
+
+BYTE fAutoNextGameName = 1;
+BYTE fAutoNextGamePassword;
+
+unsigned int nChickenLife;
+unsigned int nChickenHostileLife;
+unsigned int nChickenHostileNearbyLife;
+unsigned int nChickenLifePercent;
+unsigned int nChickenHostileLifePercent;
+unsigned int nChickenHostileNearbyLifePercent;
+
+BYTE nLifeBarTrans = -1;
+BYTE nLifeBarColour = -1;
+
+BYTE fLogInGameMessage = 0;
+
+BYTE nHiddenItemLevel;
+
+char* apUnitBlobFiles[6];
+
+BYTE anLockedChestColors[] = { 9,9,9,9,9 };
+BYTE anClosedChestColors[] = { 9,9,9,9,9 };
+BYTE anHostileMissileColors[] = { 0x62,0x62,0x62,0x62,0x62 };
+BYTE anGuidedMissileColors[] = { 0x5B,0x5B,0x5B,0x5B,0x5B };
+BYTE anTracerMissileColors[] = { 0xFF,0xFF,0xFF,0xFF,0xFF };
+BYTE anOtherMissileColors[] = { 0xFF,0xFF,0xFF,0xFF,0xFF };
+
+BYTE anMissileColours[1000];
+
+const int nMaxMinimapLevelNo = 140;
+const int nMaxMinimapCellNo = 2000;
+
+BYTE nMapScrollSpeed = 8;
+
+BYTE fEnterGameSound;
+BYTE fAutoRevealAct;
+
+BYTE anMonsterNormalColors[] = { 0x62,0x62,0x62,0x62,0x62 };
+BYTE anMonsterBossColors[] = { 0x5b,0x5b,0x5b,0x5b,0x5b };
+BYTE anMonsterMinionColors[] = { 0x5b,0x5b,0x5b,0x5b,0x5b };
+BYTE anMonsterChampColors[] = { 0x5b,0x5b,0x5b,0x5b,0x5b };
+BYTE anNeutralPlayerColors[] = { 0x62,0x62,0x62,0x62,0x62 };
+BYTE anHostilePlayerColors[] = { 0x5b,0x5b,0x5b,0x5b,0x5b };
+BYTE anNormalCorpseColors[] = { 8,8,8,8,8 };
+BYTE anBossCorpseColors[] = { 8,8,8,8,8 };
+BYTE anMinionCorpseColors[] = { 8,8,8,8,8 };
+BYTE anChampionCorpseColors[] = { 8,8,8,8,8 };
+
+BYTE anMonsterCorpseColors[1000];
+
+BYTE afMonsterCorpses[1000];
+BYTE afMissileCorpses[1000];
+BYTE afMonsterDeathAnims[1000];
+
+BYTE fDangerousMonsterAction;
+
+typedef char ItemColours[8][2][7][2];
+
+BYTE anAutomapActiveRoomColors[] = { 0x16, 0x16, 0x16, 0x16, 0x16 };
+BYTE anAutomapReadyColors[] = { 7 ,7, 7, 7, 7 };
+BYTE anAutomapScreenColors[] = { 0x16, 0x16, 0x16, 0x16, 0x16 };
+
+struct DangerousMonster {
+    BYTE type;
+    char stat;
+}anDangerousMonster[1000];
+
+static union {
+    ItemColours anItemColours[3000];
+    struct {
+        ItemColours anItemWeaponCols[1000];
+        ItemColours anItemArmorCols[1000];
+        ItemColours anItemMiscCols[1000];
+    };
+};
+
+
+ToggleVar tToggleFullVisuals = { 1, VK_MULTIPLY };
+ToggleVar tToggleSleepy = { 0, -1, "Low CPU Usage Toggle" };
+ToggleVar tToggleTrueResist = { 0, -1, "Show Resist Toggle" };
+ToggleVar tToggleAreaLevel = { 0, -1, "Area Level Toggle" };
+ToggleVar tToggleULCMask = { 0, -1, "ULC Mask Toggle" };
+ToggleVar tToggleShowPacket = { 0, -1, "Show Packet Toggle" };
+ToggleVar tToggleShowExp = { 0, -1, "Show Exp Toggle" };
+ToggleVar tToggleShowPetExp = { 0, -1, "Show PET Exp Toggle" };
+ToggleVar tToggleShowPing = { 0, -1, "Show Ping Toggle" };
+ToggleVar tToggleAutoParty = { 0, -1, "Auto Party Toggle" };
+ToggleVar tToggleAutoMap = { 0, -1, "Auto Map Toggle" };
+ToggleVar tToggleBugKM = { 0, -1, "Bug KM Toggle" };
+ToggleVar tToggleBugKD = { 0, -1, "Bug KD Toggle",NULL,0 };
+ToggleVar tToggleBugKB = { 0, -1, "Bug KB Toggle",NULL,0 };
+//ToggleVar vkAutoDropItem = { 0, -1, "Auto Drop Item Key" };
+
+
+// new
+ToggleVar tToggleInfravision = { 1, VK_MULTIPLY };
+ToggleVar tToggleLightRadiu = { 1, VK_MULTIPLY };
+ToggleVar tToggleScreenshake = { 1, VK_MULTIPLY };
+ToggleVar tToggleHiddenCorpse = { 0, VK_MULTIPLY };
+// end
+
+ToggleVar tToggleAutomapMonsters = { 1, VK_DIVIDE };
+ToggleVar tToggleAutomapLevelNames = { 1, VK_DIVIDE };
+ToggleVar tToggleAutomapChests = { 0, VK_DIVIDE };
+
+ToggleVar tToggleAutomapItems = { 1, VK_DIVIDE, "Show automap items" };
+ToggleVar tToggleAutomapMissiles = { 1, VK_DIVIDE };
+
+// new
+ToggleVar tToggleAutomapCorpse = { 0, -1 };
+ToggleVar tToggleAutomapActiveRoom = { 0, -1 };
+ToggleVar tToggleAutomapReadyRoom = { 0, -1 };
+// end
+
+ToggleVar tToggleHiddenItems = { 0, VK_ADD, "Show hidden items" };
+ToggleVar tToggleScrollMap = { 0, VK_SCROLL };
+
+// new
+ToggleVar tToggleAutomapScreenArea = { 0, VK_SCROLL };
+ToggleVar tToggleMonsterLevel = { 0, -1, "Monster Level" };
+// end
+
+ToggleVar tTogglePermShowItems = { 0, -1, "Perm show items" };
+
+// new
+ToggleVar tToggleGameTime = { 1, -1, "Game Time" };
+ToggleVar tToggleClock = { 0, -1, "Game Clock" };
+ToggleVar tTogglePermShowOrb = { 0, -1, "Perm Show Orbs" };
+ToggleVar tToggleInputLine = { 0, -1, "New input line" };
+ToggleVar tToggleOutTownSelect = { 0, -1, "Out of town select" };
+// end
+
+ToggleVar tToggleMiniShrine = { 0, -1 };
+ToggleVar tToggleDiagonalScroll = { 1, -1, "Diagonal scroll" };
+ToggleVar tToggleMonsterTC = { 0, -1 };
+ToggleVar tToggleMonsterResists = { 0, -1 };
+
+// new
+ToggleVar tToggleChickenLife = { 1, -1, "Chicken life" };
+ToggleVar tToggleChickenHostile = { 1, -1, "Chicken hostile" };
+ToggleVar tToggleChickenHostileNearby = { 1, -1, "Chicken hostile nearby" };
+// end
+
+ToggleVar tToggleSocketProtect = { 0, -1, "Socket protect" };
+ToggleVar tToggleRuneNumbers = { 1, -1, "Rune numbers" };
+ToggleVar tToggleSocketNumbers = { 1, -1, "Socket numbers" };
+
+// new, added by sting
+ToggleVar tToggleKeepGameWindow = { 0, -1, "Keep game window", &KeepGameWindow };
+ToggleVar tToggleMinimap = { 0, -1, "Minimap" };
+ToggleVar tToggleServerIp = { 1, -1 };
+ToggleVar tToggleChickenDangerousMonster = { 0, -1, "Chicken Dangerous Monster" };
+ToggleVar tToggleRightClickSwap = { 1, -1, "Right Click Swap" };
+ToggleVar tToggleUseCustomFont = { 0, -1, "Use Custom Font" };
+ToggleVar tToggleLayerLevelNo = { 0, -1, "Layer And Level No" };
+
+
+// new
+ToggleVar tToggleItemLevel = { 0, -1 };
+ToggleVar tToggleItemValue = { 0, -1 };
+ToggleVar tToggleItemIndex = { 0, -1 };
+ToggleVar tToggleUnitNumber = { 0, -1 };
+ToggleVar tToggleViewSocketable = { 0, -1, "View socketables" };
+ToggleVar tToggleItemBasicStat = { 0, -1, "Item basic stat" };
+// end
+
+#include <vector>
+std::vector<ToggleVar*> allToggleVars = {
+    &tToggleFullVisuals,
+    &tToggleSleepy,
+    &tToggleTrueResist,
+    &tToggleAreaLevel,
+    &tToggleULCMask,
+    &tToggleShowPacket,
+    &tToggleShowExp,
+    &tToggleShowPetExp,
+    &tToggleShowPing,
+    &tToggleAutoParty,
+    &tToggleAutoMap,
+    &tToggleBugKM,
+    &tToggleBugKD,
+    &tToggleBugKB,
+    &tToggleInfravision,
+    &tToggleLightRadiu,
+    &tToggleScreenshake,
+    &tToggleHiddenCorpse,
+    &tToggleAutomapMonsters,
+    &tToggleAutomapLevelNames,
+    &tToggleAutomapChests,
+    &tToggleAutomapItems,
+    &tToggleAutomapMissiles,
+    &tToggleAutomapCorpse,
+    &tToggleAutomapActiveRoom,
+    &tToggleAutomapReadyRoom,
+    &tToggleHiddenItems,
+    &tToggleScrollMap,
+    &tToggleAutomapScreenArea,
+    &tToggleMonsterLevel,
+    &tTogglePermShowItems,
+    &tToggleGameTime,
+    &tToggleClock,
+    &tTogglePermShowOrb,
+    &tToggleInputLine,
+    &tToggleOutTownSelect,
+    &tToggleMiniShrine,
+    &tToggleDiagonalScroll,
+    &tToggleMonsterTC,
+    &tToggleMonsterResists,
+    &tToggleChickenLife,
+    &tToggleChickenHostile,
+    &tToggleChickenHostileNearby,
+    &tToggleSocketProtect,
+    &tToggleRuneNumbers,
+    &tToggleSocketNumbers,
+    &tToggleKeepGameWindow,
+    &tToggleMinimap,
+    &tToggleServerIp,
+    &tToggleChickenDangerousMonster,
+    &tToggleRightClickSwap,
+    &tToggleUseCustomFont,
+    &tToggleLayerLevelNo,
+    &tToggleItemLevel,
+    &tToggleItemValue,
+    &tToggleItemIndex,
+    &tToggleUnitNumber,
+    &tToggleViewSocketable,
+    &tToggleItemBasicStat,
+};
+
+//config stuff
+
+ConfigVar aConfigVars[] = {
+    {"LowCPUUsageToggle", 0,      &tToggleSleepy, 1, 2, 1},
+    {"ShowHighestResistToggle", 0,      &tToggleTrueResist, 1, 2, 1},
+    {"AreaLevelToggle", 0,        &tToggleAreaLevel, 1, 2, 1},
+    {"ULCMaskToggle", 0,        &tToggleULCMask, 1, 2, 1},
+    {"ShowPacketToggle", 0,        &tToggleShowPacket, 1, 2, 1},
+    {"BugKMToggle", 0,        &tToggleBugKM, 1, 2, 1},
+    {"BugKDToggle", 0,        &tToggleBugKD, 1, 2, 1},
+    {"BugKBToggle", 0,        &tToggleBugKB, 1, 2, 1},
+
+    {"AutoMapToggle", 0,        &tToggleAutoMap, 1, 2, 1},
+    {"AutoPartyToggle", 0,        &tToggleAutoParty, 1, 2, 1},
+    {"ShowPingToggle", 0,        &tToggleShowPing, 1, 2, 1},
+    {"ShowExpToggle", 0,        &tToggleShowExp, 1, 2, 1},
+    {"ShowPETExpToggle", 0,        &tToggleShowPetExp, 1, 2, 1},
+    {"RevealActAutomapKey", 0,          &vkRevealAct, 1, 1, 1},
+    {"RevealLevelAutomapKey", 0,        &vkRevealLevel, 1, 1, 1},
+    {"CenterMapScrollKey", 0,           &vkCenterMap, 1, 1, 1},
+    {"QuickExitGameKey", 0,             &vkExitGame, 1, 1, 1},
+    {"QuickNextGameKey", 0,             &vkQuickNextGame, 1, 1, 1},
+    {"QuickBackToTownKey", 0,				&vkBackToTown, 1, 1, 1},
+    {"ViewEquipmentKey", 0,             &viewingInventory.vkKeyCode, 1, 1, 1},
+
+    // new, added by sting
+    {"FirstPlayerStatKey", 0,			&vkFirstPlayerStat, 1, 1, 1},
+    {"NextPlayerStatKey", 0,			&vkNextPlayerStat, 1, 1, 1},
+    {"PreviousPlayerStatKey", 0,		&vkPrevPlayerStat, 1, 1, 1},
+    {"ViewPlayerStatsKey", 0,			&viewingStats.vkKeyCode, 1, 1, 1},
+    //	{"ViewPlayerSkillsKey", 0,			&viewingSkills.vkKeyCode, 1, 1, 1},
+    //	{"ViewPlayerPetKey", 0,				&viewingPet.vkKeyCode, 1, 1, 1},
+    //	{"ViewPlayerQuestInfoKey", 0,		&viewingQuestInfo.vkKeyCode, 1, 1, 1},
+        {"ExtraworkDllAction", 0,			&fExtraworkDllAction, 1, 1, 1},
+        {"VersionCheckingDllAction", 0,			&fVersionCheckingDllAction, 1, 1, 1},
+        {"AutoNextGameName", 0,				&fAutoNextGameName, 1, 1, 1},
+        {"AutoNextGamePassword", 0,				&fAutoNextGamePassword, 1, 1, 1},
+        {"AutoRevealAct", 0,				&fAutoRevealAct, 1, 1, 1},
+        {"LogInGameMessage", 0,				&fLogInGameMessage, 1, 1, 1},
+        {"MessageLogToggle", 0,				&fLogInGameMessage, 1, 1, 1},
+        {"LocaleMPQ", 0,					&szLocaleMPQ, 0, 1, 1},
+        {"LocalizationSupport", 0,				&fLocalizationSupport, 1, 1, 1},
+        {"RightClickSwapToggle", 0,				&tToggleRightClickSwap, 1, 2, 1},
+        {"UseCustomFontToggle", 0,				&tToggleUseCustomFont, 1, 2, 1},
+        {"LayerLevelNoToggle", 0,				&tToggleLayerLevelNo, 1, 2, 1},
+        // end
+
+        {"WeatherToggle", "FullVisualsToggle", &tToggleFullVisuals, 1, 2, 1},
+        // new
+        {"InfravisionToggle", "FullVisualsToggle", &tToggleInfravision, 1, 2, 1},
+        {"LightRadiuToggle", "FullVisualsToggle", &tToggleLightRadiu, 1, 2, 1},
+        {"ScreenShakeToggle", "FullVisualsToggle", &tToggleScreenshake, 1, 2, 1},
+        {"HiddenCorpseToggle", "FullVisualsToggle", &tToggleHiddenCorpse, 1, 2, 1},
+        // end
+
+        {"AutomapMonstersToggle", 0,        &tToggleAutomapMonsters, 1, 2, 1},
+        {"AutomapLevelNamesToggle", 0,      &tToggleAutomapLevelNames, 1, 2, 1},
+        {"AutomapChestsToggle", 0,          &tToggleAutomapChests, 1, 2, 1},
+
+
+        {"AutomapItemsToggle", 0,           &tToggleAutomapItems, 1, 2, 1},
+
+        // new
+        {"AutomapCorpseToggle", 0,           &tToggleAutomapCorpse, 1, 2, 1},
+        {"AutomapActiveRoomToggle", 0,       &tToggleAutomapActiveRoom, 1, 2, 1},
+        {"AutomapReadyRoomToggle", 0,       &tToggleAutomapReadyRoom, 1, 2, 1},
+        // end
+
+        {"HiddenItemsToggle", 0,            &tToggleHiddenItems, 1, 2, 1},
+        {"ScrollMapToggle", 0,              &tToggleScrollMap, 1, 2, 1},
+
+        // new
+        {"AutomapScreenAreaToggle", 0,              &tToggleAutomapScreenArea, 1, 2, 1},
+        // end
+
+        // not exist
+        {"AutomapMissilesToggle", 0,        &tToggleAutomapMissiles, 1, 2, 1},
+        // end
+
+        {"MonsterTCToggle", 0,              &tToggleMonsterTC, 1, 2, 1},
+
+        // new
+        {"MonsterLevelToggle", 0,              &tToggleMonsterLevel, 1, 2, 1},
+        {"MonsterResistsToggle", 0,              &tToggleMonsterResists, 1, 2, 1},
+        // end
+
+        {"PermShowItemsToggle", 0,          &tTogglePermShowItems, 1, 2 ,1},
+
+        // new
+        {"GameTimeToggle", 0,          &tToggleGameTime, 1, 2 ,1},
+        {"ClockToggle", 0,          &tToggleClock, 1, 2 ,1},
+        {"PermShowOrbsToggle", 0,          &tTogglePermShowOrb, 1, 2 ,1},
+        {"InputLineToggle", 0,          &tToggleInputLine, 1, 2 ,1},
+        {"OutTownSelectToggle", 0,          &tToggleOutTownSelect, 1, 2 ,1},
+        // end
+
+        {"AutomapPartyDefault", 0,          &fAutomapPartyDefault, 1, 1, 1},
+        {"AutomapNamesDefault", 0,          &fAutomapNamesDefault, 1, 1, 1},
+
+        {"MiniShrinesToggle", 0,            &tToggleMiniShrine, 1, 2, 1},
+        {"LevelNameColour", 0,              &nCaveNameTextCol, 1, 1, 1},
+        {"StaffTombLevelDesc", 0,           &szStaffTombLvlDesc, 0, 1, 1},
+        {"DiagonalScrollToggle", 0,         &tToggleDiagonalScroll, 1, 2, 1},
+        {"MapScrollSpeed", 0,               &nMapScrollSpeed, 1, 1, 1},
+        {"LifeBarTransparency", 0,          &nLifeBarTrans, 1, 1, 1},
+        {"LifeBarColour", 0,                &nLifeBarColour, 1, 1, 1},
+        {"SocketProtectToggle", 0,          &tToggleSocketProtect, 1, 2, 1},
+
+        // new
+        {"ChickenLifeToggle", 0,          &tToggleChickenLife, 1, 2, 1},
+        {"ChickenHostileToggle", 0,          &tToggleChickenHostile, 1, 2, 1},
+        {"ChickenHostileNearbyToggle", 0,          &tToggleChickenHostileNearby, 1, 2, 1},
+        {"ChickenLife", 0,          &nChickenLife, 4, 1, 1},
+        {"ChickenHostileLife", 0,          &nChickenHostileLife, 4, 1, 1},
+        {"ChickenHostileNearbyLife", 0,          &nChickenHostileNearbyLife, 4, 1, 1},
+        {"ChickenLifePercent", 0,          &nChickenLifePercent, 4, 1, 1},
+        {"ChickenHostileLifePercent", 0,          &nChickenHostileLifePercent, 4, 1, 1},
+        {"ChickenHostileNearbyLifePercent", 0,          &nChickenHostileNearbyLifePercent, 4, 1, 1},
+        // end
+
+        {"UnitBlobFiles", 0,                &apUnitBlobFiles, 0, 1, ARRAYSIZE(apUnitBlobFiles)},
+        {"PlayerBlobFile", 0,               &apUnitBlobFiles[0], 0, 1, 1},
+        {"MonsterBlobFile", 0,              &apUnitBlobFiles[1], 0, 1, 1},
+        {"ObjectBlobFile", 0,               &apUnitBlobFiles[2], 0, 1, 1},
+        {"MissileBlobFile", 0,              &apUnitBlobFiles[3], 0, 1, 1},
+        {"ItemBlobFile", 0,                 &apUnitBlobFiles[4], 0, 1, 1},
+
+        // new
+        {"AutomapActiveRoomColour", 0,            &anAutomapActiveRoomColors, 1, 1, ARRAYSIZE(anAutomapActiveRoomColors)},
+        {"AutomapReadyRoomColour", 0,            &anAutomapReadyColors, 1, 1, ARRAYSIZE(anAutomapReadyColors)},
+        {"AutomapScreenAreaColour", 0,            &anAutomapScreenColors, 1, 1, ARRAYSIZE(anAutomapScreenColors)},
+        // end
+
+        {"ClosedChestColour", 0,            &anClosedChestColors, 1, 1, ARRAYSIZE(anClosedChestColors)},
+        {"LockedChestColour", 0,            &anLockedChestColors, 1, 1, ARRAYSIZE(anLockedChestColors)},
+
+        {"HostileMissileColour", 0,         &anHostileMissileColors, 1, 1, ARRAYSIZE(anHostileMissileColors)},
+        {"GuidedMissileColour", 0,          &anGuidedMissileColors, 1, 1, ARRAYSIZE(anGuidedMissileColors)},
+        {"TracerMissileColour", 0,          &anTracerMissileColors, 1, 1, ARRAYSIZE(anTracerMissileColors)},
+        {"OtherMissileColour", 0,          &anOtherMissileColors, 1, 1, ARRAYSIZE(anOtherMissileColors)},
+        {"MissileColours", 0,               &anMissileColours, 1, 1, ARRAYSIZE(anMissileColours)},
+
+        // new
+        {"MissileCorpse", 0,               &afMissileCorpses, 1, 1, ARRAYSIZE(afMissileCorpses)},
+        {"EtherealItemPrefix", 0,               &szEtherealItemPrefix, 0, 1, 1},
+        {"EtherealItemPostfix", 0,               &szEtherealItemPostfix, 0, 1, 1},
+        // end
+
+        {"RuneNumbersToggle", 0,            &tToggleRuneNumbers, 1, 2, 1},
+        {"SocketNumbersToggle", 0,          &tToggleSocketNumbers, 1, 2, 1},
+
+        // new
+        {"ItemLevelsToggle", 0,          &tToggleItemLevel, 1, 2, 1},
+        {"ItemValueToggle", 0,          &tToggleItemValue, 1, 2, 1},
+        {"ItemValueNpc", 0,          &nItemValueNpc, 4, 1, 1},
+        {"ItemIndexsToggle", 0,          &tToggleItemIndex, 1, 2, 1},
+        {"UnitNumbersToggle", 0,          &tToggleUnitNumber, 1, 2, 1},
+        {"ViewSocketablesToggle", 0,          &tToggleViewSocketable, 1, 2, 1},
+        {"ItemBasicStatsToggle", 0,          &tToggleItemBasicStat, 1, 2, 1},
+        // end
+
+        {"QuestItemColour", 0,              &nQuestItemColour, 1, 1, 1},
+
+        // new
+        {"HiddenItemLevel", 0,              &nHiddenItemLevel, 1, 1, 1},
+        // end
+
+        // new, added by sting
+        {"KeepGameWindowToggle", 0,         &tToggleKeepGameWindow, 1, 2, 1},
+        {"MinimapToggle", 0,				&tToggleMinimap, 1, 2, 1},
+        {"MinimapCells", 0,					(void*)-1, 1, 1, {{nMaxMinimapLevelNo}, {nMaxMinimapCellNo}} },
+        //	{"MinimapCellColour", 0,	        &nMinimapCellCol, 1, 1, 1},
+            {"MinimapCellColour", 0,	        &nMinimapCellCol[0], 1, 1, 1},
+            {"MinimapCellColour2", 0,	        &nMinimapCellCol[1], 1, 1, 1},
+            {"MinimapSize", 0,			        &nMinimapSize, 1, 1, 1},
+            {"EnterGameSound", 0,			     &fEnterGameSound, 1, 1, 1},
+            {"ServerIpToggle", 0,			     &tToggleServerIp, 1, 2, 1},
+
+        #ifdef ENABLE_CATCH_EXECEPTION
+            // for debug only
+            {"CrashDumpFile", 0,			     &nDumpType, 4, 1, 1},
+            // end
+        #endif
+
+            // not exist
+            {"RareItemColour", 0,               (char*)anItemColours + 5 * 2 * 2, 1, 2, {{ARRAYSIZE(anItemColours)}, {8}, {2}, {7}} },
+            {"UniqueItemColour", 0,             (char*)anItemColours + 6 * 2 * 2, 1, 2, {{ARRAYSIZE(anItemColours)}, {8}, {2}, {7}} },
+            // end
+
+            {"ItemColours", 0,                  &anItemColours, 1, 2, {{ARRAYSIZE(anItemColours)}, {8}, {2}, {7} } }, // 0x0BB8, 8, 2, 0x4007
+            {"WeaponColours", 0,                &anItemWeaponCols, 1, 2, {{ARRAYSIZE(anItemWeaponCols)}, {8}, {2}, {7} } }, // 0x3E8, 8, 2, 0x4007
+            {"ArmorColours", 0,                 &anItemArmorCols, 1, 2, {{ARRAYSIZE(anItemArmorCols)}, {8}, {2}, {7} } }, // 0x3E8, 8, 2, 0x4007
+            {"MiscItemColours", 0,              &anItemMiscCols, 1, 2, {{ARRAYSIZE(anItemMiscCols)}, {8}, {2}, {7} } }, // 0x3E8, 8, 2, 0x4007
+
+            {"CharmColours", 0,                 &anItemMiscCols[95], 1, 2, {{3}, {8}, {2}, {7}} }, // 0x3, 8, 2, 0x4007
+            {"RuneColours", 0,                  &anRuneColours, 1, 2, ARRAYSIZE(anRuneColours)}, // 0x64
+            {"RejuvPotColours", 0,              &anItemMiscCols[7], 1, 2,  {{2}, {8}, {2}, {7}} },
+            {"HealingPotColours", 0,            &anItemMiscCols[79], 1, 2, {{5}, {8}, {2}, {7}} },
+            {"ManaPotColours", 0,               &anItemMiscCols[84], 1, 2, {{5}, {8}, {2}, {7}} },
+            {"AmethystColours", "GemColours",   &anItemMiscCols[49], 1, 2, {{5}, {8}, {2}, {7}} },
+            {"TopazColours", "GemColours",      &anItemMiscCols[54], 1, 2, {{5}, {8}, {2}, {7}} },
+            {"SapphireColours", "GemColours",   &anItemMiscCols[59], 1, 2, {{5}, {8}, {2}, {7}} },
+            {"EmeraldColours", "GemColours",    &anItemMiscCols[64], 1, 2, {{5}, {8}, {2}, {7}} },
+            {"RubyColours", "GemColours",       &anItemMiscCols[69], 1, 2, {{5}, {8}, {2}, {7}} },
+            {"DiamondColours", "GemColours",    &anItemMiscCols[74], 1, 2, {{5}, {8}, {2}, {7}} },
+            {"SkullColours", "GemColours",      &anItemMiscCols[89], 1, 2, {{5}, {8}, {2}, {7}} },
+
+            {"GoodGoldNumber", 0,               &nGoldGoodNum, 4, 1, 1},
+            {"GoodGoldColour", 0,               &nGoldGoodCol, 1, 2, 1},
+            {"PoorGoldColour", 0,               &nGoldPoorCol, 1, 2, 1},
+
+            {"MonsterDescColour", 0,            &nMonsterTextCol, 1, 1, 1},
+            {"MonsterDeathAnims", 0,            &afMonsterDeathAnims, 1, 1, ARRAYSIZE(afMonsterDeathAnims)},
+            {"MonsterColours", 0,               &anMonsterColours, 1, 1, ARRAYSIZE(anMonsterColours)},
+            // new
+            {"MonsterCorpseColour", 0,           &anMonsterCorpseColors, 1, 1, ARRAYSIZE(anMonsterCorpseColors)},
+            {"DangerousMonster", 0,              &anDangerousMonster, 1, 2, ARRAYSIZE(anDangerousMonster)},
+            {"DangerousMonsterChickenToggle", 0, &tToggleChickenDangerousMonster, 1, 2, 1},
+            {"DangerousMonsterAction", 0,		 &fDangerousMonsterAction, 1, 1, 1},
+
+            // end
+
+            {"NormalMonsterColour", 0,          &anMonsterNormalColors, 1, 1, ARRAYSIZE(anMonsterNormalColors)},
+            {"BossMonsterColour", 0,            &anMonsterBossColors, 1, 1, ARRAYSIZE(anMonsterBossColors)},
+            {"MinionMonsterColour", 0,          &anMonsterMinionColors, 1, 1, ARRAYSIZE(anMonsterMinionColors)},
+            {"ChampionMonsterColour", 0,        &anMonsterChampColors, 1, 1, ARRAYSIZE(anMonsterChampColors)},
+            {"Act5BarbarianColour", 0,          &anMonsterColours[522], 1, 1, 1},
+            {"NeutralPlayerColour", 0,          &anNeutralPlayerColors, 1, 1, ARRAYSIZE(anNeutralPlayerColors)},
+            {"HostilePlayerColour", 0,          &anHostilePlayerColors, 1, 1, ARRAYSIZE(anHostilePlayerColors)},
+
+            // new
+            {"NormalCorpseColour", 0,          &anNormalCorpseColors, 1, 1, ARRAYSIZE(anNormalCorpseColors)},
+            {"BossCorpseColour", 0,          &anBossCorpseColors, 1, 1, ARRAYSIZE(anBossCorpseColors)},
+            {"MinionCorpseColour", 0,          &anMinionCorpseColors, 1, 1, ARRAYSIZE(anMinionCorpseColors)},
+            {"ChampionCorpseColour", 0,          &anChampionCorpseColors, 1, 1, ARRAYSIZE(anChampionCorpseColors)},
+            // end
+
+            {"EnchantmentDescs", 0,             &aszEnchantDescs, 0, 1, ARRAYSIZE(aszEnchantDescs)},
+            {"AuraDescs", 0,                    &aszAuraDescs, 0, 1, ARRAYSIZE(aszAuraDescs)},
+            {"ImmunityDescs", 0,                &aszImmuneDescs, 0, 1, ARRAYSIZE(aszImmuneDescs)},
+
+            {"ExtraStrongDesc", 0,              &aszEnchantDescs[5], 0, 1, 1},
+            {"ExtraFastDesc", 0,                &aszEnchantDescs[6], 0, 1, 1},
+            {"CursedDesc", 0,                   &aszEnchantDescs[7], 0, 1, 1},
+            {"MagicResistantDesc", 0,           &aszEnchantDescs[8], 0, 1, 1},
+            {"FireEnchantedDesc", 0,            &aszEnchantDescs[9], 0, 1, 1},
+            {"ChampionDesc", 0,                 &aszEnchantDescs[16], 0, 1, 1},
+            {"LightningEnchantedDesc", "LightEnchantedDesc",       &aszEnchantDescs[17], 0, 1, 1},
+            {"ColdEnchantedDesc", 0,            &aszEnchantDescs[18], 0, 1, 1},
+            {"ThiefDesc", 0,                    &aszEnchantDescs[24], 0, 1, 1},
+            {"ManaBurnDesc", 0,                 &aszEnchantDescs[25], 0, 1, 1},
+            {"TeleportationDesc", 0,            &aszEnchantDescs[26], 0, 1, 1},
+            {"SpectralHitDesc", 0,              &aszEnchantDescs[27], 0, 1, 1},
+            {"StoneSkinDesc", 0,                &aszEnchantDescs[28], 0, 1, 1},
+            {"MultipleShotsDesc", 0,            &aszEnchantDescs[29], 0, 1, 1},
+            {"GhostlyDesc", 0,                  &aszEnchantDescs[36], 0, 1, 1},
+            {"FanaticDesc", 0,                  &aszEnchantDescs[37], 0, 1, 1},
+            {"PossessedDesc", 0,                &aszEnchantDescs[38], 0, 1, 1},
+            {"BerserkerDesc", 0,                &aszEnchantDescs[39], 0, 1, 1},
+
+            {"MightAuraDesc", 0,                &aszAuraDescs[0], 0, 1, 1},
+            {"HolyFireAuraDesc", 0,             &aszAuraDescs[1], 0, 1, 1},
+            {"BlessedAimAuraDesc", 0,           &aszAuraDescs[2], 0, 1, 1},
+            {"HolyFreezeAuraDesc", 0,           &aszAuraDescs[3], 0, 1, 1},
+            {"HolyShockAuraDesc", 0,            &aszAuraDescs[4], 0, 1, 1},
+            {"ConvictionAuraDesc", 0,           &aszAuraDescs[5], 0, 1, 1},
+            {"FanaticismAuraDesc", 0,           &aszAuraDescs[6], 0, 1, 1},
+
+            {"PhysicalImmunityDesc", 0,         &aszImmuneDescs[0], 0, 1, 1},
+            {"MagicImmunityDesc", 0,            &aszImmuneDescs[1], 0, 1, 1},
+            {"FireImmunityDesc", 0,             &aszImmuneDescs[2], 0, 1, 1},
+            {"LightningImmunityDesc", 0,        &aszImmuneDescs[3], 0, 1, 1},
+            {"ColdImmunityDesc", 0,             &aszImmuneDescs[4], 0, 1, 1},
+            {"PoisonImmunityDesc", 0,           &aszImmuneDescs[5], 0, 1, 1},
+};
+
+
 
 DWORD HR1024X768_FixMPQ();
 void HR1024X768_FixOffset_ASM();
@@ -201,8 +1564,6 @@ void CheckBugQuest()
       BugKM = 1;
   }
 }
-
-BYTE fLogInGameMessage = 0;
 
 void LogExitMessage()
 {
@@ -969,11 +2330,6 @@ notshrine:
 }
 
 //draw automap cave names/shrines
-
-BYTE nCaveNameTextCol = 0;
-
-BYTE *szStaffTombLvlDesc;
-
 void DrawAutomapCellHint(int cellno, DWORD xpos, DWORD ypos);
 
 void __stdcall DrawAutomapCellPatch(CellContext *pCellContext, DWORD xpos, DWORD ypos, RECT *cliprect, DWORD bright)
@@ -1075,8 +2431,6 @@ lightold:
 
 int xMapOffset = 0, yMapOffset = 0;
 
-BYTE nMapScrollSpeed = 8;
-
 void __fastcall ShakeScreenPatch(DWORD *xpos, DWORD *ypos)
 {
   D2CLIENT_CalcShake(xpos, ypos);
@@ -1111,9 +2465,6 @@ void CenterMap()
 }
 
 //lifebar stuff
-
-BYTE nLifeBarTrans = -1, nLifeBarColour = -1;
-
 void __declspec(naked) LifeBarPatch_ASM()
 {
   __asm {
@@ -1137,25 +2488,6 @@ nodefault2:
 }
 
 //shared item vars
-
-char nQuestItemColour = -1;
-char nUnk1ItemColour = 1;
-int nItemValueNpc = 0x201;
-char nMonsterColor = -1;
-typedef char ItemColours[8][2][7][2];
-
-static union {
-  ItemColours anItemColours[3000];
-  struct {
-    ItemColours anItemWeaponCols[1000];
-    ItemColours anItemArmorCols[1000];
-    ItemColours anItemMiscCols[1000];
-  };
-};
-
-char anRuneColours[100][2];
-
-int nGoldGoodNum = 0; char nGoldGoodCol[2] = {-1,-1}, nGoldPoorCol[2] = {-1,-1};
 
 void InitItemColours()
 {
@@ -1197,8 +2529,6 @@ char *GetItemColour(UnitAny *item)
 }
 
 //items name stuff
-BYTE *szEtherealItemPrefix = NULL;
-BYTE *szEtherealItemPostfix = NULL;
 void __fastcall ItemNamePatch(wchar_t *name, UnitAny *item)
 {
   wchar_t temp[0x40];
@@ -1307,732 +2637,7 @@ showitem:
   }
 }
 
-//monsters automap blob stuff
-
-#define _0 -2
-#define _1 -1
-
-BYTE anMonsterColours[1000] = {
-  _1, //0 Skeleton
-  _1, //1 Returned
-  _1, //2 BoneWarrior
-  _1, //3 BurningDead
-  _1, //4 Horror
-  _1, //5 Zombie
-  _1, //6 HungryDead
-  _1, //7 Ghoul
-  _1, //8 DrownedCarcass
-  _1, //9 PlagueBearer
-  _1, //10 Afflicted
-  _1, //11 Tainted
-  _1, //12 Misshapen
-  _1, //13 Disfigured
-  _1, //14 Damned
-  _1, //15 FoulCrow
-  _1, //16 BloodHawk
-  _1, //17 BlackRaptor
-  _1, //18 CloudStalker
-  _1, //19 Fallen
-  _1, //20 Carver
-  _1, //21 Devilkin
-  _1, //22 DarkOne
-  _1, //23 WarpedFallen
-  _1, //24 Brute
-  _1, //25 Yeti
-  _1, //26 Crusher
-  _1, //27 WailingBeast
-  _1, //28 GargantuanBeast
-  _1, //29 SandRaider
-  _1, //30 Marauder
-  _1, //31 Invader
-  _1, //32 Infidel
-  _1, //33 Assailant
-  _1, //34 unused, Gorgon
-  _1, //35 unused, StoneStalker
-  _1, //36 unused, SerpentQueen
-  _1, //37 unused, StygianWatcher
-  _1, //38 Ghost
-  _1, //39 Wraith
-  _1, //40 Specter
-  _1, //41 Apparition
-  _1, //42 DarkShape
-  _1, //43 DarkHunter
-  _1, //44 VileHunter
-  _1, //45 DarkStalker
-  _1, //46 BlackRogue
-  _1, //47 FleshHunter
-  _1, //48 DuneBeast
-  _1, //49 RockDweller
-  _1, //50 JungleHunter
-  _1, //51 DoomApe
-  _1, //52 TempleGuard
-  _1, //53 MoonClan
-  _1, //54 NightClan
-  _1, //55 BloodClan
-  _1, //56 HellClan
-  _1, //57 DeathClan
-  _1, //58 FallenShaman
-  _1, //59 CarverShaman
-  _1, //60 DevilkinShaman
-  _1, //61 DarkShaman
-  _1, //62 WarpedShaman
-  _1, //63 QuillRat
-  _1, //64 SpikeFiend
-  _1, //65 ThornBeast
-  _1, //66 RazorSpine
-  _1, //67 JungleUrchin
-  _1, //68 SandMaggot
-  _1, //69 RockWorm
-  _1, //70 Devourer
-  _1, //71 GiantLamprey
-  _1, //72 WorldKiller
-  _1, //73 TombViper
-  _1, //74 ClawViper
-  _1, //75 Salamander
-  _1, //76 PitViper
-  _1, //77 SerpentMagus
-  _1, //78 SandLeaper
-  _1, //79 CaveLeaper
-  _1, //80 TombCreeper
-  _1, //81 TreeLurker
-  _1, //82 RazorPitDemon
-  _1, //83 Huntress
-  _1, //84 SaberCat
-  _1, //85 NightTiger
-  _1, //86 HellCat
-  _1, //87 Itchies
-  _1, //88 BlackLocusts
-  _1, //89 PlagueBugs
-  _1, //90 HellSwarm
-  _1, //91 DungSoldier
-  _1, //92 SandWarrior
-  _1, //93 Scarab
-  _1, //94 SteelWeevil
-  _1, //95 AlbinoRoach
-  _1, //96 DriedCorpse
-  _1, //97 Decayed
-  _1, //98 Embalmed
-  _1, //99 PreservedDead
-  _1, //100 Cadaver
-  _1, //101 HollowOne
-  _1, //102 Guardian
-  _1, //103 Unraveler
-  _1, //104 Horadrim Ancient
-  _1, //105 Baal Subject Mummy
-  _1, //106 unused, DamnedHorde
-  _1, //107 unused, TwistedHorde
-  _1, //108 unused, WickedHorde
-  _1, //109 unused, UnholyHorde
-  _1, //110 CarrionBird
-  _1, //111 UndeadScavenger
-  _1, //112 HellBuzzard
-  _1, //113 WingedNightmare
-  _1, //114 Sucker
-  _1, //115 Feeder
-  _1, //116 BloodHook
-  _1, //117 BloodWing
-  _1, //118 Gloam
-  _1, //119 SwampGhost
-  _1, //120 BurningSoul
-  _1, //121 BlackSoul
-  _1, //122 Arach
-  _1, //123 SandFisher
-  _1, //124 PoisonSpinner
-  _1, //125 FlameSpider
-  _1, //126 SpiderMagus
-  _1, //127 ThornedHulk
-  _1, //128 BrambleHulk
-  _1, //129 Thrasher
-  _1, //130 Spikefist
-  _1, //131 GhoulLord
-  _1, //132 NightLord
-  _1, //133 DarkLord
-  _1, //134 BloodLord
-  _1, //135 Banished
-  _1, //136 DesertWing
-  _1, //137 Fiend
-  _1, //138 Gloombat
-  _1, //139 BloodDiver
-  _1, //140 DarkFamiliar
-  _1, //141 RatMan
-  _1, //142 Fetish
-  _1, //143 Flayer
-  _1, //144 SoulKiller
-  _1, //145 StygianDoll
-  _0, //146 DeckardCain
-  _0, //147 Gheed
-  _0, //148 Akara
-  _0, //149 dummy, chicken
-  _0, //150 Kashya
-  _0, //151 dummy, rat
-  _0, //152 Dummy, RogueTown
-  _0, //153 Dummy, HellMeteor
-  _0, //154 Charsi
-  _0, //155 Warriv
-  _1, //156 Andariel
-  _0, //157 dummy, Smallbird
-  _0, //158 dummy, Largebird
-  _0, //159 dummy, Bat
-  _1, //160 DarkRanger
-  _1, //161 VileArcher
-  _1, //162 DarkArcher
-  _1, //163 BlackArcher
-  _1, //164 FleshArcher
-  _1, //165 DarkSpearwoman
-  _1, //166 VileLancer
-  _1, //167 DarkLancer
-  _1, //168 BlackLancer
-  _1, //169 FleshLancer
-  _1, //170 SkeletonArcher
-  _1, //171 ReturnedArcher
-  _1, //172 BoneArcher
-  _1, //173 BurningDeadArcher
-  _1, //174 HorrorArcher
-  _0, //175 Warriv
-  _0, //176 Atma
-  _0, //177 Drognan
-  _0, //178 Fara
-  _0, //179 dummy, Cow
-  _1, //180 SandMaggotYoung
-  _1, //181 RockWormYoung
-  _1, //182 DevourerYoung
-  _1, //183 GiantLampreyYoung
-  _1, //184 WorldKillerYoung
-  _0, //185 dummy, Camel
-  _1, //186 Blunderbore
-  _1, //187 Gorbelly
-  _1, //188 Mauler
-  _1, //189 Urdar
-  _1, //190 SandMaggotEgg
-  _1, //191 RockWormEgg
-  _1, //192 DevourerEgg
-  _1, //193 GiantLampreyEgg
-  _1, //194 WorldKillerEgg
-  _0, //195 dummy, Act2Male
-  _0, //196 Dummy, Act2Female
-  _0, //197 dummy, Act2Child
-  _0, //198 Greiz
-  _0, //199 Elzix
-  _0, //200 Geglash
-  _0, //201 Jerhyn
-  _0, //202 Lysander
-  _0, //203 Dummy, Act2Guard
-  _0, //204 dummy, Act2Vendor1
-  _0, //205 dummy, Act2Vendor2
-  _1, //206 FoulCrowNest
-  _1, //207 BloodHawkNest
-  _1, //208 BlackVultureNest
-  _1, //209 CloudStalkerNest
-  _0, //210 Meshif
-  _1, //211 Duriel
-  _1, //212 Undead RatMan
-  _1, //213 Undead Fetish
-  _1, //214 Undead Flayer
-  _1, //215 Undead SoulKiller
-  _1, //216 Undead StygianDoll
-  _1, //217 unused, DarkGuard
-  _1, //218 unused, DarkKnight
-  _1, //219 unused, BloodGuard
-  _1, //220 unused, BloodKnight
-  _1, //221 unused, DarkPaladin
-  _1, //222 unused, BloodMage
-  _1, //223 unused, Demonist
-  _1, //224 unused, BlackMagus
-  _1, //225 unused, Diabolist
-  _1, //226 unused, DeathMage
-  _0, //227 Maggot
-  _1, //228 MummyGenerator
-  _1, //229 Radament
-  _1, //230 unused, FireBeast
-  _1, //231 unused, IceGlobe
-  _1, //232 unused, LightningBeast
-  _1, //233 unused, PoisonOrb
-  _1, //234 FlyingScimitar
-  _1, //235 Zakarumite
-  _1, //236 Faithful
-  _1, //237 Zealot
-  _1, //238 Sexton
-  _1, //239 Cantor
-  _1, //240 Heirophant
-  _1, //241 Heirophant
-  _1, //242 Mephisto
-  _1, //243 Diablo
-  _0, //244 DeckardCain
-  _0, //245 DeckardCain
-  _0, //246 DeckardCain
-  _1, //247 Swamp Dweller
-  _1, //248 Bog Creature
-  _1, //249 Slime Prince
-  _1, //250 Summoner
-  _0, //251 tyrael
-  _0, //252 asheara
-  _0, //253 hratli
-  _0, //254 alkor
-  _0, //255 ormus
-  _1, //256 izual
-  _0, //257 halbu
-  _1, //258 WaterWatcherLimb
-  _1, //259 RiverStalkerLimb
-  _1, //260 StygianWatcherLimb
-  _1, //261 WaterWatcherHead
-  _1, //262 RiverStalkerHead
-  _1, //263 StygianWatcherHead
-  _0, //264 meshif
-  _0, //265 DeckardCain
-  _0, //266 navi (flavie)
-  _1, //267 Bloodraven
-  _0, //268 Dummy, bug
-  _0, //269 Dummy, scorpion
-  _1, //270 RogueScout
-  _1, //271 Dummy, RogueHireling (act1 hireling)
-  _0, //272 Dummy, RogueTownShoot
-  _1, //273 GargoyleTrap
-  _1, //274 ReturnedMage
-  _1, //275 BoneMage
-  _1, //276 BurningDeadMage
-  _1, //277 HorrorMage
-  _1, //278 RatManShaman
-  _1, //279 FetishShaman
-  _1, //280 FlayerShaman
-  _1, //281 SoulKillerShaman
-  _1, //282 StygianDollShaman
-  _0, //283 larva
-  _1, //284 SandMaggotQueen
-  _1, //285 RockWormQueen
-  _1, //286 DevourerQueen
-  _1, //287 GiantLampreyQueen
-  _1, //288 WorldKillerQueen
-  _1, //289 ClayGolem
-  _1, //290 BloodGolem
-  _1, //291 IronGolem
-  _1, //292 FireGolem
-  _0, //293 Dummy, Familiar
-  _0, //294 Dummy, Act3Male
-  _1, //295 NightMarauder
-  _0, //296 Dummy, Act3Female
-  _0, //297 Natalya
-  _1, //298 FleshSpawner
-  _1, //299 StygianHag
-  _1, //300 Grotesque
-  _1, //301 FleshBeast
-  _1, //302 StygianDog
-  _1, //303 GrotesqueWyrm
-  _1, //304 Groper
-  _1, //305 Strangler
-  _1, //306 StormCaster
-  _1, //307 Corpulent
-  _1, //308 CorpseSpitter
-  _1, //309 MawFiend
-  _1, //310 DoomKnight
-  _1, //311 AbyssKnight
-  _1, //312 OblivionKnight
-  _1, //313 QuillBear
-  _1, //314 SpikeGiant
-  _1, //315 ThornBrute
-  _1, //316 RazorBeast
-  _1, //317 GiantUrchin
-  _0, //318 Dummy, Snake
-  _0, //319 Dummy, Parrot
-  _0, //320 Dummy, Fish
-  _0, //321 Dummy, Evil Hole
-  _0, //322 Dummy, Evil Hole
-  _0, //323 Dummy, Evil Hole
-  _0, //324 Dummy, Evil Hole
-  _0, //325 Dummy, Evil Hole
-  _0, //326 a trap, trapfirebolt
-  _0, //327 a trap
-  _0, //328 a trap (act2 wall, act3 totem)
-  _0, //329 a trap, trappoison
-  _0, //330 a trap, trapchainlightning
-  _0, //331 Kaelan
-  _0, //332 Dummy, InvisoSpawner
-  _1, //333 unused, DiabloClone
-  _1, //334 SuckerNest
-  _1, //335 FeederNest
-  _1, //336 BloodHookNest
-  _1, //337 BloodWingNest
-  _1, //338 Guard (act2 hireling)
-  _0, //339 Dummy, MiniSpider
-  _1, //340 x, PrisonFL
-  _1, //341 x, PrisonFR
-  _1, //342 x, PrisonBL
-  _1, //343 x, PrisonBR
-  _0, //344 Dummy, Bonewall*
-  _1, //345 Council Member
-  _1, //346 Council Member
-  _1, //347 Council Member
-  _1, //348 Turret1
-  _1, //349 Turret2
-  _1, //350 Turret3
-  _0, //351 Hydra1
-  _0, //352 Hydra2
-  _0, //353 Hydra3
-  _1, //354 a trap, pillar
-  _0, //355 Dummy, seven tombs
-  _1, //356 Dopplezon
-  _1, //357 Valkyrie
-  _0, //358 Dummy, Act2Hireling
-  _0, //359 Iron Wolf (act3 town+hireling)*
-  _1, //360 Balrog
-  _1, //361 PitLord
-  _1, //362 VenomLord
-  _1, //363 NecroSkeleton (necro skel)
-  _1, //364 NecroMage (necro mage)
-  _1, //365 Griswold
-  _0, //366 compellingorb
-  _0, //367 tyrael
-  _0, //368 youngdiablo
-  _0, //369 a trap, nova
-  _1, //370 Dummy, SpiritMummy
-  _1, //371 LightningSpire
-  _1, //372 FireTower
-  _1, //373 Slinger
-  _1, //374 SpearCat
-  _1, //375 NightSlinger
-  _1, //376 HellSlinger
-  _0, //377 Dummy, Boba Fett
-  _0, //378 Dummy, Darth Maul
-  _1, //379 ReturnedMage
-  _1, //380 BoneMage
-  _1, //381 BaalColdMage
-  _1, //382 HorrorMage
-  _1, //383 ReturnedMage
-  _1, //384 BoneMage
-  _1, //385 BurningDeadMage
-  _1, //386 HorrorMage
-  _1, //387 ReturnedMage
-  _1, //388 BoneMage
-  _1, //389 BurningDeadMage
-  _1, //390 HorrorMage
-  _1, //391 Hell Bovine
-  _0, //392 x, window right (act4 window)*
-  _0, //393 x, window left (act4 window)*
-  _1, //394 SpearCat
-  _1, //395 NightSlinger
-  _1, //396 RatMan
-  _1, //397 Fetish
-  _1, //398 Flayer
-  _1, //399 SoulKiller
-  _1, //400 StygianDoll
-  _0, //401 Dummy, Mephisto Spirit
-  _1, //402 The Smith
-  _0, //403 TrappedSoul*
-  _0, //404 TrappedSoul*
-  _0, //405 Jamella
-  _0, //406 Izual's Ghost
-  _1, //407 RatMan
-  _0, //408 Malachai?
-  _1, //409 The Feature Creep
-
-  _0, //410 Wake of Destruction
-  _0, //411 Charged Bolt Sentry
-  _0, //412 Lightning Sentry
-  _0, //413 Blade Creeper (blade sentinel)
-  _0, //414 Invis Pet*
-  _0, //415 Inferno Sentry
-  _0, //416 Death Sentry
-  _1, //417 Shadow Warrior
-  _1, //418 Shadow Master
-  _1, //419 Druid Hawk*
-  _1, //420 Druid Spirit Wolf
-  _1, //421 Druid Fenris (dire wolf)
-  _1, //422 Spirit of Barbs
-  _1, //423 Heart of Wolverine
-  _1, //424 Oak Sage
-  _1, //425 Druid Plague Poppy (poison creeper)*
-  _1, //426 Druid Cycle of Life (carrion vine)*
-  _1, //427 Vine Creature (solar creeper)*
-  _1, //428 Druid Bear
-  _1, //429 Eagle
-  _1, //430 Wolf
-  _1, //431 Bear
-  _0, //432 Barricade Door*
-  _0, //433 Barricade Door*
-  _0, //434 Prison Door*
-  _0, //435 Barricade Tower*
-  _1, //436 RotWalker
-  _1, //437 ReanimatedHorde
-  _1, //438 ProwlingDead
-  _1, //439 UnholyCorpse
-  _1, //440 DefiledWarrior
-  _1, //441 Siege Beast
-  _1, //442 CrushBiest
-  _1, //443 BloodBringer
-  _1, //444 GoreBearer
-  _1, //445 DeamonSteed
-  _1, //446 SnowYeti1
-  _1, //447 SnowYeti2
-  _1, //448 SnowYeti3
-  _1, //449 SnowYeti4
-  _1, //450 WolfRider1
-  _1, //451 WolfRider2
-  _1, //452 WolfRider3
-  _1, //453 Minionexp
-  _1, //454 Slayerexp
-  _1, //455 IceBoar
-  _1, //456 FireBoar
-  _1, //457 HellSpawn
-  _1, //458 IceSpawn
-  _1, //459 GreaterHellSpawn
-  _1, //460 GreaterIceSpawn
-  _1, //461 FanaticMinion
-  _1, //462 BerserkSlayer
-  _1, //463 ConsumedFireBoar
-  _1, //464 ConsumedIceBoar
-  _1, //465 FrenziedHellSpawn
-  _1, //466 FrenziedIceSpawn
-  _1, //467 InsaneHellSpawn
-  _1, //468 InsaneIceSpawn
-  _1, //469 Succubusexp
-  _1, //470 VileTemptress
-  _1, //471 StygianHarlot
-  _1, //472 Hell Temptress
-  _1, //473 Blood Temptress
-  _1, //474 Dominus
-  _1, //475 VileWitch
-  _1, //476 StygianFury
-  _1, //477 Blood Witch
-  _1, //478 Hell Witch
-  _1, //479 OverSeer
-  _1, //480 Lasher
-  _1, //481 OverLord
-  _1, //482 BloodBoss
-  _1, //483 HellWhip
-  _1, //484 MinionSpawner
-  _1, //485 MinionSlayerSpawner
-  _1, //486 MinionIce/fireBoarSpawner
-  _1, //487 MinionIce/fireBoarSpawner
-  _1, //488 Minionice/hellSpawnSpawner
-  _1, //489 MinionIce/fireBoarSpawner
-  _1, //490 MinionIce/fireBoarSpawner
-  _1, //491 Minionice/hellSpawnSpawner
-  _1, //492 Imp1
-  _1, //493 Imp2
-  _1, //494 Imp3
-  _1, //495 Imp4
-  _1, //496 Imp5
-  _1, //497 CatapultS
-  _1, //498 CatapultE
-  _1, //499 CatapultSiege
-  _1, //500 CatapultW
-  _1, //501 Frozen Horror1
-  _1, //502 Frozen Horror2
-  _1, //503 Frozen Horror3
-  _1, //504 Frozen Horror4
-  _1, //505 Frozen Horror5
-  _1, //506 Blood Lord1
-  _1, //507 Blood Lord2
-  _1, //508 Blood Lord3
-  _1, //509 Blood Lord4
-  _1, //510 Blood Lord5
-  _0, //511 Larzuk
-  _0, //512 Drehya
-  _0, //513 Malah
-  _0, //514 Nihlathak Town
-  _0, //515 Qual-Kehk
-  _0, //516 Catapult Spotter S (target?)
-  _0, //517 Catapult Spotter E (target?)
-  _0, //518 Catapult Spotter Siege (target?)
-  _0, //519 Catapult Spotter W
-  _0, //520 DeckardCain
-  _0, //521 tyrael
-  0xcb, //522 Act 5 Combatant (barb fighter)*
-  _0, //523 Act 5 Combatant*
-  _0, //524 Barricade Wall Right*
-  _0, //525 Barricade Wall Left*
-  _1, //526 Nihlathak outside town
-  _0, //527 Drehya outside town
-  _1, //528 Evil hut
-  _1, //529 Death Mauler1
-  _1, //530 Death Mauler2
-  _1, //531 Death Mauler3
-  _1, //532 Death Mauler4
-  _1, //533 Death Mauler5
-  _0, //534 POW (captured barb)*
-  _0, //535 Act 5 Townguard
-  _0, //536 Act 5 Townguard
-  _0, //537 Ancient Statue 1
-  _0, //538 Ancient Statue 2
-  _0, //539 Ancient Statue 3
-  _1, //540 Ancient Barbarian 1
-  _1, //541 Ancient Barbarian 2
-  _1, //542 Ancient Barbarian 3
-  _0, //543 Baal Throne
-  _1, //544 Baal Crab
-  _0, //545 Baal Taunt (invis follower)
-  _1, //546 Putrid Defiler1
-  _1, //547 Putrid Defiler2
-  _1, //548 Putrid Defiler3
-  _1, //549 Putrid Defiler4
-  _1, //550 Putrid Defiler5
-  _1, //551 Pain Worm1
-  _1, //552 Pain Worm2
-  _1, //553 Pain Worm3
-  _1, //554 Pain Worm4
-  _1, //555 Pain Worm5
-  _0, //556 Bunny
-  _1, //557 Council Member
-  _1, //558 VenomLord
-  _0, //559 Baal Crab to Stairs
-  _1, //560 Act 5 Hireling 1hs
-  _1, //561 Act 5 Hireling 2hs (act5 hireling)
-  _1, //562 Baal Tentacle
-  _1, //563 Baal Tentacle
-  _1, //564 Baal Tentacle
-  _1, //565 Baal Tentacle
-  _1, //566 Baal Tentacle
-  _0, //567 Injured Barbarian 1 (town barb)
-  _0, //568 Injured Barbarian 2 (town barb)
-  _0, //569 Injured Barbarian 3 (town barb)
-  _1, //570 Baal Crab Clone
-  _1, //571 Baals Minion
-  _1, //572 Baals Minion
-  _1, //573 Baals Minion
-  _0, //574 Worldstone Effect
-  _1, //575
-  _1, //576
-  _1, //577
-  _1, //578
-  _1, //579
-  _1, //580
-  _1, //581
-  _1, //582
-  _1, //583
-  _1, //584
-  _1, //585
-  _1, //586
-  _1, //587
-  _1, //588
-  _1, //589
-  _1, //590
-  _1, //591
-  _1, //592
-  _1, //593
-  _1, //594
-  _1, //595
-  _1, //596
-  _1, //597
-  _1, //598
-  _1, //599
-  _1, //600
-  _1, //601
-  _1, //602
-  _1, //603
-  _1, //604
-  _1, //605
-  _1, //606
-  _1, //607
-  _1, //608
-  _1, //609
-  _1, //610
-  _1, //611
-  _1, //612
-  _1, //613
-  _1, //614
-  _1, //615
-  _1, //616
-  _1, //617
-  _1, //618
-  _1, //619
-  _1, //620
-  _1, //621
-  _1, //622
-  _1, //623
-  _1, //624
-  _1, //625
-  _1, //626
-  _1, //627
-  _1, //628
-  _1, //629
-  _1, //630
-  _1, //631
-  _1, //632
-  _1, //633
-  _1, //634
-  _1, //635
-  _1, //636
-  _1, //637
-  _1, //638
-  _1, //639
-  _1, //640
-  _1, //641
-  _1, //642
-  _1, //643
-  _1, //644
-  _1, //645
-  _1, //646
-  _1, //647
-  _1, //648
-  _1, //649
-  _1, //650
-  _1, //651
-  _1, //652
-  _1, //653
-  _1, //654
-  _1, //655
-  _1, //656
-  _1, //657
-  _1, //658
-  _1, //659
-  _1, //660
-  _1, //661
-  _1, //662
-  _1, //663
-  _1, //664
-  _1, //665
-  _1, //666
-  _1, //667
-  _1, //668
-  _1, //669
-  _1, //670
-  _1, //671
-  _1, //672
-  _1, //673
-  _1, //674
-  _1, //675
-  _1, //676
-  _1, //677
-  _1, //678
-  _1, //679
-  _1, //680
-  _1, //681
-  _1, //682
-  _1, //683
-  _1, //684
-  _1, //685
-  _1, //686
-  _1, //687
-  _1, //688
-  _1, //689
-  _1, //690
-  _1, //691
-  _1, //692
-  _1, //693
-  _1, //694
-  _1, //695
-  _1, //696
-  _1, //697
-  _1, //698
-  _1, //699
-  _1, //700
-  _1, //701
-  _1, //702
-  _1, //703
-};
-
-#undef _0
-#undef _1
-
 int nCurrentAct;
-BYTE anLockedChestColors[] = {9,9,9,9,9};
-BYTE anClosedChestColors[] = {9,9,9,9,9};
-BYTE anHostileMissileColors[] = {0x62,0x62,0x62,0x62,0x62};
-BYTE anGuidedMissileColors[] = {0x5B,0x5B,0x5B,0x5B,0x5B};
-BYTE anTracerMissileColors[] = {0xFF,0xFF,0xFF,0xFF,0xFF};
-BYTE anOtherMissileColors[] = {0xFF,0xFF,0xFF,0xFF,0xFF};
-
-
-BYTE anMissileColours[1000];
 
 //mixed automap blob stuff
 
@@ -2081,24 +2686,6 @@ BYTE __fastcall MixedBlobColPatch(UnitAny *unit)
   return -1;
 }
 
-
-
-BYTE anMonsterNormalColors[] = {0x62,0x62,0x62,0x62,0x62};
-BYTE anMonsterBossColors[] = {0x5b,0x5b,0x5b,0x5b,0x5b};
-BYTE anMonsterMinionColors[] = {0x5b,0x5b,0x5b,0x5b,0x5b};
-BYTE anMonsterChampColors[] = {0x5b,0x5b,0x5b,0x5b,0x5b};
-BYTE anNeutralPlayerColors[] = {0x62,0x62,0x62,0x62,0x62};
-BYTE anHostilePlayerColors[] = {0x5b,0x5b,0x5b,0x5b,0x5b};
-BYTE anNormalCorpseColors[] = {8,8,8,8,8};
-BYTE anBossCorpseColors[] = {8,8,8,8,8};
-BYTE anMinionCorpseColors[] = {8,8,8,8,8};
-BYTE anChampionCorpseColors[] = {8,8,8,8,8};
-
-BYTE anMonsterCorpseColors[1000];
-struct DangerousMonster {
-  BYTE type;
-  char stat;
-}anDangerousMonster[1000];
 BYTE fGameShutdow;
 
 void ChickenQuit(wchar_t* quitinfo, int no = 8)
@@ -2199,13 +2786,6 @@ void __declspec(naked) PlayerBlobColPatch_ASM()
 }
 
 //monsters automap name stuff
-
-BYTE *aszEnchantDescs[50];
-BYTE *aszAuraDescs[7];
-BYTE *aszImmuneDescs[6];
-
-BYTE nMonsterTextCol = 1;
-
 void __fastcall MonsterBlobNamePatch(UnitAny *mon, int xpos, int ypos)
 {
   wchar_t temp[1024], *p = temp;
@@ -2290,8 +2870,6 @@ defcol:
 }
 
 //blob draw stuff
-
-char *apUnitBlobFiles[6];
 
 CellFile *apUnitBlobCells[6];
 void InitBlobs()
@@ -2422,11 +3000,6 @@ void __declspec(naked) HostilePlayerColor_ASM()
 
 //monster stuff
 
-BYTE afMonsterCorpses[1000];
-BYTE afMissileCorpses[1000];
-BYTE afMonsterDeathAnims[1000];
-
-BYTE nHiddenItemLevel;
 wchar_t * __fastcall OpenCubeStringPatch(wchar_t *str, DWORD col)
 {
   return ColourD2String(str, (nQuestItemColour != -1) ? nQuestItemColour : col);
@@ -2543,7 +3116,6 @@ BOOL TestMonsterOnScreen(UnitAny *mon, UnitAny *pla)
 
 void BackToTown();
 BYTE fBackToTown;
-BYTE fDangerousMonsterAction;
 BYTE fDangerousMonsterActive;
 BYTE fGetPlayerStatPrepared;
 void CheckPlayerStat(UnitAny *mon)
@@ -2604,10 +3176,6 @@ void __declspec(naked) InfravisionPatch_ASM()
     ret
   }
 }
-
-BYTE anAutomapActiveRoomColors[] = {0x16, 0x16, 0x16, 0x16, 0x16};
-BYTE anAutomapReadyColors[] = {7 ,7, 7, 7, 7};
-BYTE anAutomapScreenColors[] = {0x16, 0x16, 0x16, 0x16, 0x16};
 
 void ScreenToAutomap(POINT* pos, int x, int y)
 {
@@ -2959,26 +3527,6 @@ void __declspec(naked) MonsterDescCommaPatch3_ASM()
 
 //view inventory stuff
 
-class ViewingPlayerInfo
-{
-public:
-  void OpenView();
-  void ViewLoop();
-  ViewingPlayerInfo():nPlayerId(-1),nUnitType(-1),nUnitNo(-1),vkKeyCode(-1){}
-  BOOL TestUnit(UnitAny *unit);
-  virtual void CreateUI() = 0;
-  virtual void DestroyUI() = 0;
-  virtual DWORD GetUI() = 0;
-private:
-  friend UnitAny * __fastcall ViewingGetUnit(ViewingPlayerInfo* vpi, UnitAny *unitdef);
-private:
-  DWORD nPlayerId;
-  DWORD nUnitType;
-  DWORD nUnitNo;
-public:
-  BYTE  vkKeyCode;
-};
-
 BOOL ViewingTestMonster(UnitAny *mon)
 {
   DWORD flag = D2CLIENT_GetMonsterTxt(mon->nTxtFileNo)->flag1;
@@ -3015,83 +3563,6 @@ UnitAny * __fastcall ViewingGetUnit(ViewingPlayerInfo* vpi, UnitAny *unitdef)
   return unitdef;
 }
 
-class ViewingInventoryInfo : public ViewingPlayerInfo
-{
-public:
-  virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_INVENTORY, 0, 1); }
-  virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_INVENTORY, 1, 1); }
-  virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_INVENTORY); }
-};
-
-
-void ViewingPlayerInfo::OpenView()
-{
-  UnitAny *unitpla = D2CLIENT_GetSelectedUnit();
-  if (!unitpla || !TestUnit(unitpla)) return;
-  
-  CreateUI();
-
-  if (unitpla->nUnitType == UNITNO_MONSTER && (nPlayerId = D2CLIENT_GetMonsterOwner(unitpla->nUnitId)) != -1) {
-    nUnitType = 0;
-    nUnitNo = D2CLIENT_GetUnitNoFromId(unitpla->nUnitId);
-  } else {
-    nUnitType = unitpla->nUnitType;
-    nUnitNo = -1;
-    nPlayerId = unitpla->nUnitId;
-  }
-}
-
-void ViewingPlayerInfo::ViewLoop()
-{
-  if (nPlayerId != -1) {
-    if (!GetUI() || !TestUnit(ViewingGetUnit(this, NULL))) {
-      nPlayerId = -1;
-      if (GetUI()) {
-        CreateUI();
-      }
-    }
-  }
-}
-
-class ViewingStatsInfo : public ViewingPlayerInfo
-{
-public:
-  virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_STATS, 0, 1); }
-  virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_STATS, 1, 1); }
-  virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_STATS); }
-};
-
-class ViewingSkillsInfo : public ViewingPlayerInfo
-{
-public:
-  virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_SKILLS, 2, 1); }
-  virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_SKILLS, 1, 1); }
-  virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_SKILLS); }
-};
-
-class ViewingQuestInfo : public ViewingPlayerInfo
-{
-public:
-  virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_QUEST, 0, 1); }
-  virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_QUEST, 1, 1); }
-  virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_QUEST); }
-};
-
-class ViewingPetInfo : public ViewingPlayerInfo
-{
-public:
-  virtual void CreateUI() { D2CLIENT_SetUiVar(UIVAR_PET, 2, 1); }
-  virtual void DestroyUI() { D2CLIENT_SetUiVar(UIVAR_PET, 1, 1); }
-  virtual DWORD GetUI() { return D2CLIENT_GetUiVar(UIVAR_PET); }
-};
-
-
-
-ViewingInventoryInfo viewingInventory;
-ViewingStatsInfo viewingStats;
-ViewingSkillsInfo viewingSkills;
-ViewingPetInfo viewingPet;
-ViewingQuestInfo viewingQuestInfo;
 
 ViewingPlayerInfo* viewingList[] = {
   &viewingInventory,
@@ -3381,8 +3852,6 @@ outcode:
 
 //misc patchs stuff
 
-BYTE fAutomapPartyDefault = 1, fAutomapNamesDefault = 1;
-
 void __fastcall CowLevelQuestPatch(int ypos, int xpos)
 {
   int QuesttPage = D2CLIENT_nQuestPage;
@@ -3534,12 +4003,6 @@ UnitAny* GetNearbyUnit(DWORD unitid, DWORD unittype)
   return NULL;
 }
 
-unsigned int nChickenLife;
-unsigned int nChickenHostileLife;
-unsigned int nChickenHostileNearbyLife;
-unsigned int nChickenLifePercent;
-unsigned int nChickenHostileLifePercent;
-unsigned int nChickenHostileNearbyLifePercent;
 void ChickenLife()
 {
   if (fGameShutdow || TestPlayerInTown(D2CLIENT_GetPlayerUnit())) return;
@@ -3837,9 +4300,8 @@ void D2QuickNextGame()
   D2ExitGame(0);
 }
 
-BYTE fAutoNextGameName = 1;
-BYTE fAutoNextGamePassword;
 wchar_t wszGamePassword[32];
+
 void __fastcall NextGameNamePatch(D2EditBox* box, BOOL (__stdcall *FunCallBack)(D2EditBox*,DWORD,DWORD))
 {
   if (!fAutoNextGameName) return;
@@ -3883,8 +4345,6 @@ void SetCurrentPlayerStat(int inc);
 void ResetMinimapCells();
 void ResetPacketRecvIntercept();
 void InstallPatchs2();
-BYTE fEnterGameSound;
-BYTE fAutoRevealAct;
 
 BYTE LastACT;
 DWORD CurrentSecond;
@@ -4182,9 +4642,7 @@ struct PlayerStat {
 };
 
 BYTE PAGESHOWNUMS = 7;
-BYTE vkFirstPlayerStat = -1;
-BYTE vkNextPlayerStat = -1;
-BYTE vkPrevPlayerStat = -1;
+
 
 int nCurrentPlayerStat = 0;
 void SetCurrentPlayerStat(int inc)
@@ -4312,34 +4770,43 @@ void __fastcall KeydownPatch(BYTE keycode, BYTE repeat)
 
   char buf[512];
   buf[0] = '\0';
-  ToggleVar *tv = &pTogglesListStart;
-  while (tv <= &pTogglesListEnd) {
-    if (keycode == tv->key) {
-      
-      if (tv->flag != 0)
+
+  for (const auto& toggleVariable : allToggleVars) 
+  {
+      if (keycode == toggleVariable->key)
       {
-        tv->_2[0] = tv->flag;
-        tv->flag = 0;
+          if (toggleVariable->flag != 0)
+          {
+              toggleVariable->_2[0] = toggleVariable->flag;
+              toggleVariable->flag = 0;
+          }
+
+          else
+          {
+              if (toggleVariable->_2[0] == 0)
+              {
+                  toggleVariable->flag = 1;
+              }
+              else
+              {
+                  toggleVariable->_2[1] = toggleVariable->_2[0];
+                  toggleVariable->_2[0] = toggleVariable->flag;
+                  toggleVariable->flag = toggleVariable->_2[1];
+              }
+          }
+
+          if (toggleVariable->func)
+          {
+              (toggleVariable->func)();
+          }
+
+          if (toggleVariable->desc) 
+          {
+              wsprintfA(buf + strlen(buf), ", %s %s", toggleVariable->desc, toggleVariable->flag ? "on" : "off");
+          }
       }
-      else
-      {
-        if (tv->_2[0] == 0)
-        {
-          tv->flag = 1;
-        }
-        else
-        {
-          tv->_2[1] = tv->_2[0];
-          tv->_2[0] = tv->flag;
-          tv->flag = tv->_2[1];
-        }
-      }
-      if (tv->func) (tv->func)();
-      if (tv->desc)
-        wsprintfA(buf+strlen(buf), ", %s %s", tv->desc, tv->flag ? "on" : "off");
-    }
-    tv++;
   }
+
   if (buf[0] != '\0') {
     wchar_t wbuf[512];
     D2CLIENT_PrintGameStringAtBottomLeft(wsprintfW2(wbuf, "<Hackmap>: %s.", &buf[2]), 0);
@@ -4537,8 +5004,6 @@ void __declspec(naked) AntiDetectionPatch65_3_ASM()
   }
 }
 
-BYTE fVersionCheckingDllAction;
-BYTE fExtraworkDllAction = 1;
 HMODULE __stdcall SuspiciousDLLPatch(BYTE flag, LPCSTR lpDllFileName)
 {
   if(fGameInitDone)
@@ -5394,11 +5859,7 @@ struct MinimapCell {
 typedef std::vector<MinimapCell> LevelMinimapObjectList;
 typedef std::map<int, LevelMinimapObjectList> MinimapObjectList;
 MinimapObjectList anMinimapCells;
-const int nMaxMinimapLevelNo = 140;
-const int nMaxMinimapCellNo = 2000;
 //BYTE nMinimapCellCol = 12;// green:129, yellow:12;
-BYTE nMinimapCellCol[2]={0x84,12};
-BYTE nMinimapSize = 1;
 std::bitset<nMaxMinimapLevelNo*nMaxMinimapCellNo> anMinimapCellMasks;
 
 
@@ -5507,10 +5968,7 @@ void DrawMinimapLevel(int lvlno)
     }
   }
 }
-char *szLocaleMPQ;
-BYTE fLocalizationSupport = 1;
 
-#include "hnmconfig.cxx"
 #include "d2patchs.cxx"
 
 void KeepGameWindow()

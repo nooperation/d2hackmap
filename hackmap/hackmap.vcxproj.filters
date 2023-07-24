@@ -45,12 +45,6 @@
     <None Include="hackmap.def">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="hnmtoggles.cxx">
-      <Filter>Not Compile Files</Filter>
-    </None>
-    <None Include="hnmconfig.cxx">
-      <Filter>Not Compile Files</Filter>
-    </None>
     <None Include="exception.cxx">
       <Filter>Not Compile Files</Filter>
     </None>
@@ -63,6 +57,7 @@
     <None Include="d2helpers.cxx">
       <Filter>Not Compile Files</Filter>
     </None>
+    <None Include="..\resources\d2hackmap.cfg" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AntiDetect.h">

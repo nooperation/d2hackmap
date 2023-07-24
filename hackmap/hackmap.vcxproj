@@ -96,6 +96,7 @@ xcopy /Y /F "$(TargetDir)$(TargetName).pdb" "D:\diablo ii\plugin\"
   <ItemGroup>
     <ClCompile Include="AntiDetect.cpp" />
     <ClCompile Include="configproc.cpp" />
+    <None Include="..\resources\d2hackmap.cfg" />
     <None Include="d2helpers.cxx">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -113,15 +114,7 @@ xcopy /Y /F "$(TargetDir)$(TargetName).pdb" "D:\diablo ii\plugin\"
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </None>
     <ClCompile Include="hackmap.cpp" />
-    <None Include="hnmconfig.cxx">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </None>
     <ClCompile Include="hnminit.cpp" />
-    <None Include="hnmtoggles.cxx">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </None>
     <ClCompile Include="memhelper.cpp" />
     <ClCompile Include="mischelper.cpp" />
     <ClCompile Include="ModuleWalker.cpp" />
